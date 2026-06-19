@@ -4,6 +4,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/server"
 import type { AuditorReview } from "@/types/review"
 
 export type SaveReviewInput = {
+  projectId?: string
   repoFullName: string
   pullNumber: number
   pullTitle: string
@@ -19,6 +20,7 @@ export async function insertReview(input: SaveReviewInput) {
   const { data, error } = await supabase
     .from("reviews")
     .insert({
+      project_id: input.projectId ?? null,
       repo_full_name: input.repoFullName,
       pull_number: input.pullNumber,
       pull_title: input.pullTitle,

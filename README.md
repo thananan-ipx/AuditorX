@@ -27,16 +27,31 @@ Bearer token when calling `/api/reviews`.
 
 ## GitHub Action
 
-Copy `examples/auditorx-review.yml` into a test repository at:
+Create an account at `/login`, add a repository project, then copy the project
+workflow from `/app/projects/[id]/setup`.
+
+For a generic template, copy `examples/auditorx-review.yml` into a test
+repository at:
 
 ```text
 .github/workflows/auditorx-review.yml
 ```
 
 Then add a repository secret named `AUDITORX_API_TOKEN` with the same value used
-by your AuditorX deployment.
+by the project setup page.
+
+For project reports, also add:
+
+```text
+AUDITORX_PROJECT_ID
+```
 
 ## Supabase
 
-Run `supabase/migrations/001_initial_mvp.sql` before testing waitlist or review
-persistence.
+Run these migrations before testing waitlist, projects, or review persistence:
+
+```text
+supabase/migrations/001_initial_mvp.sql
+supabase/migrations/002_action_first_cleanup.sql
+supabase/migrations/003_membership_projects.sql
+```

@@ -1,10 +1,13 @@
 import { reviewPullRequestWithAI } from "@/lib/ai/reviewer"
 import { getEnv } from "@/lib/env"
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/server"
 import { insertReview } from "@/lib/supabase/reviews"
+import { hashProjectApiToken } from "@/lib/tokens"
 import { formatReviewComment } from "@/lib/utils/format-review-comment"
 import { truncateDiff } from "@/lib/utils/truncate-diff"
 
 type ReviewRequestBody = {
+  projectId?: unknown
   repoFullName?: unknown
   pullNumber?: unknown
   pullTitle?: unknown
@@ -23,12 +26,6 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const authError = validateRequestAuth(req)
-
-  if (authError) {
-    return Response.json({ ok: false, error: authError }, { status: 401 })
-  }
-
   let body: ReviewRequestBody
 
   try {
@@ -43,6 +40,12 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, error: parsed.error }, { status: 400 })
   }
 
+  const projectAuth = await validateRequestAuth(req, parsed.value)
+
+  if (!projectAuth.ok) {
+    return Response.json({ ok: false, error: projectAuth.error }, { status: 401 })
+  }
+
   const diff = truncateDiff(parsed.value.diffContent)
   const review = await reviewPullRequestWithAI({
     repoFullName: parsed.value.repoFullName,
@@ -54,6 +57,7 @@ export async function POST(req: Request) {
 
   try {
     await insertReview({
+      projectId: projectAuth.projectId,
       repoFullName: parsed.value.repoFullName,
       pullNumber: parsed.value.pullNumber,
       pullTitle: parsed.value.pullTitle,
@@ -73,27 +77,60 @@ export async function POST(req: Request) {
   })
 }
 
-function validateRequestAuth(req: Request) {
-  const expectedToken = getEnv("AUDITORX_API_TOKEN")
-
-  if (!expectedToken) {
-    return null
-  }
-
+async function validateRequestAuth(
+  req: Request,
+  parsed: {
+    projectId?: string
+    repoFullName: string
+  },
+): Promise<{ ok: true; projectId?: string } | { ok: false; error: string }> {
   const authorization = req.headers.get("authorization")
   const token = authorization?.replace(/^Bearer\s+/i, "")
 
-  if (token !== expectedToken) {
-    return "Invalid AuditorX API token"
+  if (parsed.projectId) {
+    if (!token) {
+      return { ok: false, error: "Missing project API token" }
+    }
+
+    const supabase = createSupabaseServiceRoleClient()
+    const { data, error } = await supabase
+      .from("projects")
+      .select("id,repo_full_name,api_token_hash")
+      .eq("id", parsed.projectId)
+      .single()
+
+    if (error || !data) {
+      return { ok: false, error: "Project not found" }
+    }
+
+    if (data.repo_full_name !== parsed.repoFullName) {
+      return { ok: false, error: "Repository does not match project" }
+    }
+
+    if (data.api_token_hash !== hashProjectApiToken(token)) {
+      return { ok: false, error: "Invalid project API token" }
+    }
+
+    return { ok: true, projectId: data.id }
   }
 
-  return null
+  const expectedToken = getEnv("AUDITORX_API_TOKEN")
+  if (!expectedToken) {
+    return { ok: true }
+  }
+
+  if (token !== expectedToken) {
+    return { ok: false, error: "Invalid AuditorX API token" }
+  }
+
+  return { ok: true }
 }
 
 function parseReviewRequest(body: ReviewRequestBody):
   | {
       ok: true
       value: {
+        projectId?: string
         repoFullName: string
         pullNumber: number
         pullTitle: string
@@ -102,6 +139,10 @@ function parseReviewRequest(body: ReviewRequestBody):
       }
     }
   | { ok: false; error: string } {
+  if (body.projectId !== undefined && typeof body.projectId !== "string") {
+    return { ok: false, error: "projectId must be a string when provided" }
+  }
+
   if (typeof body.repoFullName !== "string" || !body.repoFullName.includes("/")) {
     return { ok: false, error: "repoFullName is required" }
   }
@@ -125,6 +166,7 @@ function parseReviewRequest(body: ReviewRequestBody):
   return {
     ok: true,
     value: {
+      projectId: body.projectId,
       repoFullName: body.repoFullName,
       pullNumber: body.pullNumber,
       pullTitle: body.pullTitle,
