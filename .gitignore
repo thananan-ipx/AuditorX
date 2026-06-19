@@ -17,6 +17,7 @@
 
 # production
 /build
+/supabase/migrations
 
 # misc
 .DS_Store
