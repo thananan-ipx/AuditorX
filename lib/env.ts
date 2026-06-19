@@ -8,6 +8,7 @@ type EnvKey =
   | "GITHUB_WEBHOOK_SECRET"
   | "GITHUB_CLIENT_ID"
   | "GITHUB_CLIENT_SECRET"
+  | "AI_REVIEW_MODE"
   | "OPENAI_API_KEY"
   | "ANTHROPIC_API_KEY"
 
@@ -39,11 +40,15 @@ export function getRequiredEnv(key: EnvKey) {
 
 export function validateServerEnv() {
   const missing = serverEnvKeys.filter((key) => !getEnv(key))
+  const usesMockAi = getEnv("AI_REVIEW_MODE") === "mock"
   const hasAiKey = Boolean(getEnv("OPENAI_API_KEY") || getEnv("ANTHROPIC_API_KEY"))
 
   return {
-    ok: missing.length === 0 && hasAiKey,
-    missing: hasAiKey ? missing : [...missing, "OPENAI_API_KEY or ANTHROPIC_API_KEY"],
+    ok: missing.length === 0 && (usesMockAi || hasAiKey),
+    missing:
+      usesMockAi || hasAiKey
+        ? missing
+        : [...missing, "OPENAI_API_KEY or ANTHROPIC_API_KEY"],
   }
 }
 
