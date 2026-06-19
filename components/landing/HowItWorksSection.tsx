@@ -1,7 +1,7 @@
 const steps = [
-  "Install AuditorX GitHub App",
+  "Add the AuditorX workflow",
   "Open a pull request",
-  "AuditorX reviews the diff",
+  "GitHub Actions sends the diff",
   "Get an AI audit comment before merge",
 ]
 

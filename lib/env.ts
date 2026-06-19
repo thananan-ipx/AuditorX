@@ -3,11 +3,7 @@ type EnvKey =
   | "SUPABASE_URL"
   | "SUPABASE_ANON_KEY"
   | "SUPABASE_SERVICE_ROLE_KEY"
-  | "GITHUB_APP_ID"
-  | "GITHUB_APP_PRIVATE_KEY"
-  | "GITHUB_WEBHOOK_SECRET"
-  | "GITHUB_CLIENT_ID"
-  | "GITHUB_CLIENT_SECRET"
+  | "AUDITORX_API_TOKEN"
   | "AI_REVIEW_MODE"
   | "OPENAI_API_KEY"
   | "ANTHROPIC_API_KEY"
@@ -17,11 +13,7 @@ const serverEnvKeys: EnvKey[] = [
   "SUPABASE_URL",
   "SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
-  "GITHUB_APP_ID",
-  "GITHUB_APP_PRIVATE_KEY",
-  "GITHUB_WEBHOOK_SECRET",
-  "GITHUB_CLIENT_ID",
-  "GITHUB_CLIENT_SECRET",
+  "AUDITORX_API_TOKEN",
 ]
 
 export function getEnv(key: EnvKey) {
@@ -50,14 +42,4 @@ export function validateServerEnv() {
         ? missing
         : [...missing, "OPENAI_API_KEY or ANTHROPIC_API_KEY"],
   }
-}
-
-export function getGitHubInstallUrl() {
-  const clientId = getEnv("GITHUB_CLIENT_ID")
-
-  if (!clientId) {
-    return "https://github.com/apps/auditorx/installations/new"
-  }
-
-  return `https://github.com/apps/auditorx/installations/new?client_id=${clientId}`
 }

@@ -1,14 +1,15 @@
 import { CTASection } from "@/components/landing/CTASection"
 import { ExampleReviewSection } from "@/components/landing/ExampleReviewSection"
+import { GitHubActionSection } from "@/components/landing/GitHubActionSection"
 import { HeroSection } from "@/components/landing/HeroSection"
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection"
 import { PricingSection } from "@/components/landing/PricingSection"
 import { ProblemSection } from "@/components/landing/ProblemSection"
-import { getGitHubInstallUrl, validateServerEnv } from "@/lib/env"
+import { validateServerEnv } from "@/lib/env"
 
 export default function Page() {
   const env = validateServerEnv()
-  const installUrl = getGitHubInstallUrl()
+  const setupHref = "#github-action"
 
   return (
     <main className="min-h-svh">
@@ -17,12 +18,13 @@ export default function Page() {
           Environment setup pending: {env.missing.join(", ")}
         </div>
       ) : null}
-      <HeroSection installUrl={installUrl} />
+      <HeroSection setupHref={setupHref} />
       <ProblemSection />
       <HowItWorksSection />
       <ExampleReviewSection />
+      <GitHubActionSection />
       <PricingSection />
-      <CTASection installUrl={installUrl} />
+      <CTASection setupHref={setupHref} />
     </main>
   )
 }

@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button"
 import { WaitlistForm } from "@/components/landing/WaitlistForm"
 
 type HeroSectionProps = {
-  installUrl: string
+  setupHref: string
 }
 
-export function HeroSection({ installUrl }: HeroSectionProps) {
+export function HeroSection({ setupHref }: HeroSectionProps) {
   return (
     <section className="border-b bg-[linear-gradient(180deg,rgba(5,150,105,0.08),rgba(255,255,255,0))]">
       <div className="mx-auto grid min-h-[88svh] max-w-6xl gap-10 px-6 py-8 md:grid-cols-[1fr_0.88fr] md:items-center md:py-12">
@@ -25,7 +25,7 @@ export function HeroSection({ installUrl }: HeroSectionProps) {
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Button asChild className="h-10 px-4">
-              <Link href={installUrl}>Install GitHub App</Link>
+              <Link href={setupHref}>Copy GitHub Action</Link>
             </Button>
             <Button asChild className="h-10 px-4" variant="outline">
               <Link href="#waitlist">Join Early Access</Link>

@@ -1,21 +1,42 @@
-# Next.js template
+# AuditorX
 
-This is a Next.js template with shadcn/ui.
+AuditorX is an MVP technical debt reviewer for pull requests. The current MVP
+uses a GitHub Action: the workflow sends a PR diff to `/api/reviews`, AuditorX
+returns a markdown review, and the workflow posts that review as a PR comment.
 
-## Adding components
-
-To add components to your app, run the following command:
+## Run locally
 
 ```bash
-npx shadcn@latest add button
+npm run dev
 ```
 
-This will place the ui components in the `components` directory.
+Open `http://localhost:3000`.
 
-## Using components
+## Environment
 
-To use the components in your app, import them as follows:
+Copy `.env.example` to `.env.local` and fill in Supabase values.
 
-```tsx
-import { Button } from "@/components/ui/button";
+Use mock AI mode while testing without API cost:
+
+```bash
+AI_REVIEW_MODE=mock
 ```
+
+Set `AUDITORX_API_TOKEN` to a shared secret. The GitHub Action sends it as a
+Bearer token when calling `/api/reviews`.
+
+## GitHub Action
+
+Copy `examples/auditorx-review.yml` into a test repository at:
+
+```text
+.github/workflows/auditorx-review.yml
+```
+
+Then add a repository secret named `AUDITORX_API_TOKEN` with the same value used
+by your AuditorX deployment.
+
+## Supabase
+
+Run `supabase/migrations/001_initial_mvp.sql` before testing waitlist or review
+persistence.

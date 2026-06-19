@@ -2,12 +2,13 @@
 
 Run `supabase/migrations/001_initial_mvp.sql` before testing the MVP.
 
+If you already ran the older GitHub App schema, run
+`supabase/migrations/002_action_first_cleanup.sql` once to migrate the database
+to the GitHub Action version.
+
 Tables:
 
-- `installations`: GitHub App installation metadata.
-- `repositories`: repositories connected to an installation.
-- `pull_requests`: PR records reviewed by AuditorX.
-- `reviews`: AI review summaries and GitHub comment ids. Full diffs are not stored.
+- `reviews`: GitHub Action submitted PR review summaries. Full diffs are not stored.
 - `waitlist`: early access leads from the landing page.
 
 Security notes:

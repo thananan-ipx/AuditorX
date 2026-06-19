@@ -3,10 +3,10 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
 type CTASectionProps = {
-  installUrl: string
+  setupHref: string
 }
 
-export function CTASection({ installUrl }: CTASectionProps) {
+export function CTASection({ setupHref }: CTASectionProps) {
   return (
     <section>
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-16 md:flex-row md:items-center md:justify-between">
@@ -14,7 +14,7 @@ export function CTASection({ installUrl }: CTASectionProps) {
           Start auditing your AI-generated code before it becomes technical debt.
         </h2>
         <Button asChild className="h-10 px-4">
-          <Link href={installUrl}>Install GitHub App</Link>
+          <Link href={setupHref}>Set Up GitHub Action</Link>
         </Button>
       </div>
     </section>
