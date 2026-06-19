@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       AUDITORX_API_URL: https://auditor-x.vercel.app/api/reviews
+      AUDITORX_PROJECT_ID: ${{ secrets.AUDITORX_PROJECT_ID }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
       PR_TITLE: ${{ github.event.pull_request.title }}
       PR_URL: ${{ github.event.pull_request.html_url }}
@@ -23,12 +24,13 @@ jobs:
         run: |
           gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" > pr.diff
           jq -n \
+            --arg projectId "$AUDITORX_PROJECT_ID" \
             --arg repoFullName "$GITHUB_REPOSITORY" \
             --argjson pullNumber "$PR_NUMBER" \
             --arg pullTitle "$PR_TITLE" \
             --arg pullUrl "$PR_URL" \
             --rawfile diffContent pr.diff \
-            '{ repoFullName: $repoFullName, pullNumber: $pullNumber, pullTitle: $pullTitle, pullUrl: $pullUrl, diffContent: $diffContent }' \
+            '{ projectId: $projectId, repoFullName: $repoFullName, pullNumber: $pullNumber, pullTitle: $pullTitle, pullUrl: $pullUrl, diffContent: $diffContent }' \
             > payload.json
 
       - name: Ask AuditorX for a review
