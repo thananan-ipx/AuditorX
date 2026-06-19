@@ -12,6 +12,16 @@ type ReviewRequestBody = {
   diffContent?: unknown
 }
 
+export async function GET() {
+  return Response.json({
+    ok: true,
+    service: "AuditorX reviews API",
+    accepts: "POST",
+    auth: getEnv("AUDITORX_API_TOKEN") ? "required" : "not configured",
+    aiMode: getEnv("AI_REVIEW_MODE") || "mock",
+  })
+}
+
 export async function POST(req: Request) {
   const authError = validateRequestAuth(req)
 

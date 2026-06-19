@@ -1,7 +1,7 @@
 name: AuditorX Review
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
 
 permissions:
@@ -19,8 +19,6 @@ jobs:
       PR_URL: ${{ github.event.pull_request.html_url }}
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
-
       - name: Build PR diff payload
         run: |
           gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" > pr.diff
@@ -35,7 +33,7 @@ jobs:
 
       - name: Ask AuditorX for a review
         run: |
-          curl -sS -X POST "$AUDITORX_API_URL" \
+          curl --fail-with-body -sS -X POST "$AUDITORX_API_URL" \
             -H "Authorization: Bearer ${{ secrets.AUDITORX_API_TOKEN }}" \
             -H "Content-Type: application/json" \
             --data @payload.json \
@@ -43,11 +41,4 @@ jobs:
           jq -r '.comment' auditorx-response.json > auditorx-comment.md
 
       - name: Post AuditorX comment
-        if: github.event.pull_request.head.repo.full_name == github.repository
         run: gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file auditorx-comment.md
-
-      - name: Skip comment for forked pull requests
-        if: github.event.pull_request.head.repo.full_name != github.repository
-        run: |
-          echo "Skipping PR comment because this pull request comes from a fork."
-          echo "GitHub does not grant the default GITHUB_TOKEN write access for forked pull_request workflows."
