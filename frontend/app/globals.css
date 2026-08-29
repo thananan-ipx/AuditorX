@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f6f7f4;
+  --foreground: #172019;
+  --card: #ffffff;
+  --card-foreground: #172019;
+  --primary: #20332a;
+  --primary-foreground: #ffffff;
+  --secondary: #eef1eb;
+  --secondary-foreground: #20332a;
+  --muted: #eef1eb;
+  --muted-foreground: #667068;
+  --border: #e0e5de;
+  --ring: #a4ca51;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --font-sans: "Inter", "Noto Sans Thai", "Segoe UI", sans-serif;
+}
+
+* { border-color: var(--border); }
+html { background: var(--background); }
+body { margin: 0; background: var(--background); color: var(--foreground); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+::selection { background: #d9f69b; color: #172019; }
+

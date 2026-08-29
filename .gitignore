@@ -1,5 +1,9 @@
 # dependencies
 /node_modules
+/frontend/node_modules
+/tools/database-tests/node_modules/
+/tools/scanner-env/
+__pycache__/
 /.pnp
 .pnp.*
 .yarn/*
@@ -13,11 +17,13 @@
 
 # next.js
 /.next/
+/frontend/.next/
 /out/
 
 # production
 /build
-/supabase/migrations
+/supabase/.temp/
+/supabase/.branches/
 
 # misc
 .DS_Store
@@ -31,10 +37,18 @@ pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!/frontend/.env.example
+!/backend/.env.example
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+!/frontend/next-env.d.ts
+
+# Go build cache
+/backend/.gocache/
 
 # MD
 *.md
+!/README.md
+!/docs/**/*.md

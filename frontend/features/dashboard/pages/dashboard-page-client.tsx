@@ -1,0 +1,179 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import {
+  ArrowRight, Bot, Check, CircleDot, Clock3, Code2,
+  GitBranch, Play, Settings, ShieldCheck, Sparkles,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { dashboardService } from "@/features/dashboard/service/dashboard-service";
+import { loadDashboard, type DashboardResult } from "@/features/dashboard/service/load-dashboard";
+import { dashboardHref } from "@/features/repositories/service/repository-service";
+import { EmptyRepositories, errorMessage, ModeNotice, UnscannedRepository, WorkspaceError } from "@/features/repositories/components/workspace-feedback";
+import type { Dashboard, Issue } from "@/features/dashboard/types";
+import { cn } from "@/lib/utils";
+import { RepositoryScans } from "@/features/scans/components/repository-scans";
+
+const severityStyle: Record<string, string> = {
+  Critical: "border-red-200 bg-red-50 text-red-700",
+  High: "border-orange-200 bg-orange-50 text-orange-700",
+  Medium: "border-amber-200 bg-amber-50 text-amber-700",
+  Low: "border-sky-200 bg-sky-50 text-sky-700",
+};
+
+type PageState = { kind: "loading" } | { kind: "error"; error: unknown } | DashboardResult;
+
+export default function DashboardPage({ repositoryID }: { repositoryID?: string }) {
+  const [state, setState] = useState<PageState>({ kind: "loading" });
+  const [revision, setRevision] = useState(0);
+  const [scanStatus, setScanStatus] = useState("");
+  const [scanBusy, setScanBusy] = useState(false);
+  const scanInFlight = useRef(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadDashboard(repositoryID, controller.signal)
+      .then((result) => {
+        if (!controller.signal.aborted) setState(result);
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) setState({ kind: "error", error });
+      });
+    return () => controller.abort();
+  }, [repositoryID, revision]);
+
+  const startScan = async () => {
+    if (state.kind !== "ready" || scanInFlight.current || state.capabilities.repository_storage !== "prototype") return;
+    scanInFlight.current = true;
+    setScanBusy(true);
+    setScanStatus("");
+    try {
+      await dashboardService.startScan(state.repository.id, state.repository.branch);
+      setScanStatus("Demo request accepted. No code was scanned and these sample results have not changed.");
+    } catch (error) { setScanStatus(errorMessage(error)); }
+    finally { scanInFlight.current = false; setScanBusy(false); }
+  };
+
+  return (
+    <main className="mx-auto max-w-[1540px] px-4 py-6 md:px-7 lg:px-9 lg:py-8">
+      {state.kind === "loading" ? <DashboardSkeleton /> : state.kind === "error"
+        ? <WorkspaceError error={state.error} returnTo={repositoryID ? dashboardHref(repositoryID) : "/dashboard"} retry={() => { setState({ kind: "loading" }); setRevision((value) => value + 1); }} />
+        : <>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">{state.kind === "empty" ? "Workspace overview" : `${state.repository.owner} / ${state.repository.name}`}</p>
+            <Button asChild variant="outline"><Link href="/repositories">Choose repository <ArrowRight size={14} /></Link></Button>
+          </div>
+          <ModeNotice capabilities={state.capabilities} />
+          {state.kind === "empty" ? <EmptyRepositories canCreate={state.capabilities.repository_creation} />
+            : state.kind === "unscanned" ? <><h1 className="mb-5 text-3xl font-bold">Repository overview</h1><UnscannedRepository repository={state.repository} /></>
+            : state.kind === "scans" ? <RepositoryScans key={state.repository.id} repository={state.repository} />
+            : <>
+              {scanStatus && <p role="status" className="mb-4 rounded-lg border bg-white p-3 text-sm">{scanStatus}</p>}
+              <DashboardContent dashboard={state.dashboard} issues={state.issues} scanBusy={scanBusy} demo={state.capabilities.repository_storage === "prototype"} startScan={startScan} />
+            </>}
+        </>}
+    </main>
+  );
+}
+
+function DashboardContent({ dashboard, issues, scanBusy, demo, startScan }: { dashboard: Dashboard; issues: Issue[]; scanBusy: boolean; demo: boolean; startScan: () => void }) {
+  const latestTime = useMemo(() => new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" }).format(new Date(dashboard.latest_scan.completed_at)), [dashboard.latest_scan.completed_at]);
+  const maxIssue = Math.max(1, ...dashboard.trend.map((point) => point.issue_count));
+  return (
+    <>
+      <section className="mb-7 flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground"><span>Workspace</span><span>/</span><span>{dashboard.repository.owner}</span></div>
+          <h1 className="break-all text-2xl font-bold tracking-[-0.035em] text-slate-950 md:text-[32px]">{dashboard.repository.name} overview</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">Here’s what changed in your codebase since the last scan.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={startScan} disabled={scanBusy || !demo} className="bg-[#18251e] text-white hover:bg-[#26392e]"><Play size={15} fill="currentColor" /> {scanBusy ? "Simulating…" : demo ? "Simulate scan" : "Scanner not available yet"}</Button>
+        </div>
+      </section>
+
+      <Card className="mb-5 overflow-hidden">
+        <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center">
+          <div className="grid size-11 place-items-center rounded-xl border bg-slate-50"><GitBranch size={21} /></div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2"><h2 className="text-base font-semibold">{dashboard.repository.owner} / {dashboard.repository.name}</h2><Badge className="border-emerald-200 bg-emerald-50 text-emerald-700"><Check size={12} className="mr-1" />{dashboard.repository.status}</Badge></div>
+            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground"><span>{dashboard.repository.branch}</span><span>{dashboard.repository.primary_language}</span><span className="flex items-center gap-1"><Clock3 size={12} /> Last scanned {latestTime}</span><span className="font-mono">{dashboard.latest_scan.commit_sha}</span></div>
+          </div>
+          <Button variant="ghost" size="sm" asChild><Link href="/repositories">Repositories <ArrowRight size={15} /></Link></Button>
+        </div>
+      </Card>
+
+      <section className="mb-5 grid gap-5 xl:grid-cols-[1.08fr_1fr_1fr]">
+        <QualityCard score={dashboard.quality_score.value} />
+        <IssueSummary data={dashboard.issues.by_severity} total={dashboard.issues.total} />
+        <PrioritySummary data={dashboard.issues.by_priority} model={dashboard.priority_model} />
+      </section>
+
+      <section className="mb-5 grid gap-5 xl:grid-cols-[1.45fr_1fr]">
+        <Card>
+          <CardHeader className="flex-row items-start justify-between">
+            <div><CardTitle>Quality trend</CardTitle><CardDescription>Score and open issues across the last five scans</CardDescription></div>
+            <Badge className="border-slate-200 bg-slate-50 text-slate-600">Last 30 days</Badge>
+          </CardHeader>
+          <CardContent>
+            <div className="relative flex h-56 items-end gap-3 border-b border-l border-slate-200 px-4 pb-0 pt-4 md:gap-6">
+              <div className="pointer-events-none absolute inset-0 flex flex-col justify-between pb-0 text-[10px] text-slate-300"><span className="border-t border-dashed" /><span className="border-t border-dashed" /><span className="border-t border-dashed" /><span /></div>
+              {dashboard.trend.map((point, index) => (
+                <div key={point.date} className="relative z-10 flex h-full flex-1 flex-col items-center justify-end gap-2">
+                  <span className="text-xs font-semibold text-slate-700">{point.quality_score}</span>
+                  <div className="group relative flex w-full max-w-14 items-end justify-center">
+                    <div className="w-full rounded-t-md bg-[#c9f060] transition-all group-hover:bg-[#b9df53]" style={{ height: `${(point.quality_score / 100) * 150}px` }} />
+                    <div className="absolute bottom-0 w-2 rounded-t bg-[#20332a]" style={{ height: `${(point.issue_count / maxIssue) * 90}px` }} />
+                  </div>
+                  <span className="absolute -bottom-6 whitespace-nowrap text-[10px] text-muted-foreground md:text-xs">{point.date}</span>
+                  {index === dashboard.trend.length - 1 && <span className="absolute right-0 top-1 rounded bg-[#20332a] px-2 py-1 text-[10px] text-white">Latest</span>}
+                </div>
+              ))}
+            </div>
+            <div className="mt-9 flex gap-5 text-xs text-muted-foreground"><span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-[#c9f060]" />Quality score</span><span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-[#20332a]" />Open issues</span></div>
+          </CardContent>
+        </Card>
+        <AISummaryCard dashboard={dashboard} />
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[1.45fr_1fr]">
+        <RecentIssues issues={issues} />
+        <CategoryBreakdown data={dashboard.issues.by_category} total={dashboard.issues.total} />
+      </section>
+    </>
+  );
+}
+
+function QualityCard({ score }: { score: number }) {
+  return <Card><CardHeader><CardDescription>Code quality score</CardDescription></CardHeader><CardContent className="flex items-center gap-5"><div className="relative grid size-28 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(#98c93c ${score * 3.6}deg, #e9ede4 0)` }}><div className="grid size-[86px] place-items-center rounded-full bg-white"><div className="text-center"><div className="text-3xl font-bold tracking-tight">{score}</div><div className="text-[10px] text-muted-foreground">out of 100</div></div></div></div><div><Badge className="mb-3 border-lime-200 bg-lime-50 text-lime-800">Good</Badge><p className="text-sm font-medium">+3.5 points</p><p className="mt-1 text-xs leading-relaxed text-muted-foreground">Improved since the previous scan. Keep addressing high-priority findings.</p></div></CardContent></Card>;
+}
+
+function IssueSummary({ data, total }: { data: Record<string, number>; total: number }) {
+  return <Card><CardHeader><div className="flex items-center justify-between"><CardDescription>Issues by severity</CardDescription><span className="text-3xl font-bold">{total}</span></div></CardHeader><CardContent><div className="mb-5 flex h-2.5 overflow-hidden rounded-full bg-muted">{Object.entries(data).map(([key, value]) => <div key={key} className={cn(key === "Critical" && "bg-red-500", key === "High" && "bg-orange-500", key === "Medium" && "bg-amber-400", key === "Low" && "bg-sky-400")} style={{ width: `${(value / total) * 100}%` }} />)}</div><div className="grid grid-cols-2 gap-3">{Object.entries(data).map(([key, value]) => <div key={key} className="flex items-center justify-between rounded-lg border bg-slate-50/60 px-3 py-2"><span className="flex items-center gap-2 text-xs text-muted-foreground"><span className={cn("size-2 rounded-full", key === "Critical" && "bg-red-500", key === "High" && "bg-orange-500", key === "Medium" && "bg-amber-400", key === "Low" && "bg-sky-400")} />{key}</span><strong className="text-sm">{value}</strong></div>)}</div></CardContent></Card>;
+}
+
+function PrioritySummary({ data, model }: { data: Record<string, number>; model: Dashboard["priority_model"] }) {
+  return <Card><CardHeader><div className="flex items-center justify-between"><CardDescription>Predicted priority</CardDescription><Badge className="border-violet-200 bg-violet-50 text-violet-700"><Sparkles size={11} className="mr-1" />AI model</Badge></div></CardHeader><CardContent><div className="space-y-3">{Object.entries(data).map(([key, value]) => <div key={key} className="grid grid-cols-[62px_1fr_24px] items-center gap-2"><span className="text-xs text-muted-foreground">{key}</span><Progress value={value * 10} className="h-1.5 [&>div]:bg-violet-500" /><span className="text-right text-xs font-semibold">{value}</span></div>)}</div><div className="mt-5 flex items-center justify-between border-t pt-3 text-[11px] text-muted-foreground"><span>{model.version}</span><span>{model.fallback_count} fallback</span></div></CardContent></Card>;
+}
+
+function AISummaryCard({ dashboard }: { dashboard: Dashboard }) {
+  const ai = dashboard.ai_summary;
+  return <Card className="overflow-hidden border-[#dbe9bd] bg-[#f4f8e9]"><CardHeader className="border-b border-[#dbe9bd]"><div className="flex items-center gap-3"><div className="grid size-9 place-items-center rounded-lg bg-[#20332a] text-[#c9f060]"><Bot size={18} /></div><div><CardTitle>AI analysis</CardTitle><CardDescription>Grounded in scan {dashboard.latest_scan.id}</CardDescription></div><Badge className="ml-auto border-emerald-200 bg-white/60 text-emerald-700"><span className="mr-1.5 size-1.5 rounded-full bg-emerald-500" />Ready</Badge></div></CardHeader><CardContent className="pt-5"><p className="text-sm leading-6 text-slate-700">{ai.summary}</p><div className="mt-4 rounded-xl border border-[#dbe9bd] bg-white/60 p-3.5"><p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-700"><ShieldCheck size={14} />Top recommendation</p><p className="text-sm font-medium text-slate-900">{ai.recommended_priorities[0]}</p></div><button className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-slate-800">Open full AI analysis <ArrowRight size={13} /></button></CardContent></Card>;
+}
+
+function RecentIssues({ issues }: { issues: Issue[] }) {
+  return <Card><CardHeader className="flex-row items-center justify-between"><div><CardTitle>Priority issues</CardTitle><CardDescription>Findings that need your attention first</CardDescription></div><Button variant="ghost" size="sm">View all <ArrowRight size={14} /></Button></CardHeader><CardContent><div className="divide-y">{issues.slice(0, 4).map((issue) => <button key={issue.id} className="grid w-full grid-cols-[1fr_auto] gap-3 py-3.5 text-left first:pt-0 last:pb-0 md:grid-cols-[1fr_90px_90px]"><div className="min-w-0"><p className="truncate text-sm font-medium text-slate-900">{issue.title}</p><p className="mt-1 truncate font-mono text-[11px] text-muted-foreground">{issue.file}:{issue.line}</p></div><Badge className={cn("h-fit justify-self-end", severityStyle[issue.severity])}>{issue.severity}</Badge><div className="hidden items-center justify-end gap-1.5 text-xs text-muted-foreground md:flex"><span className="size-1.5 rounded-full bg-violet-500" />{issue.priority}</div></button>)}</div></CardContent></Card>;
+}
+
+function CategoryBreakdown({ data, total }: { data: Record<string, number>; total: number }) {
+  const icons = [ShieldCheck, Code2, Settings, Check];
+  return <Card><CardHeader><CardTitle>Finding categories</CardTitle><CardDescription>Where the current issues are concentrated</CardDescription></CardHeader><CardContent className="space-y-4">{Object.entries(data).map(([name, value], index) => { const Icon = icons[index] ?? CircleDot; return <div key={name}><div className="mb-2 flex items-center justify-between text-sm"><span className="flex items-center gap-2"><span className="grid size-7 place-items-center rounded-md bg-slate-100"><Icon size={14} /></span>{name}</span><strong>{value}</strong></div><Progress value={(value / total) * 100} className="h-1.5 [&>div]:bg-slate-700" /></div>; })}</CardContent></Card>;
+}
+
+function DashboardSkeleton() {
+  return <div className="animate-pulse"><div className="mb-8 h-20 rounded-2xl bg-slate-200/70" /><div className="mb-5 h-24 rounded-2xl bg-slate-200/70" /><div className="grid gap-5 md:grid-cols-3">{[1,2,3].map((item) => <div key={item} className="h-56 rounded-2xl bg-slate-200/70" />)}</div></div>;
+}

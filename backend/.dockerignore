@@ -1,0 +1,8 @@
+.env
+.env.*
+.gocache/
+*.exe
+.git
+.gitignore
+coverage.out
+tmp/

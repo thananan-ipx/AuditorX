@@ -1,0 +1,16 @@
+rules:
+  - id: auditorx.python.dynamic-eval
+    languages: [python]
+    severity: ERROR
+    message: Avoid evaluating dynamic code; use a constrained parser instead.
+    pattern: eval(...)
+  - id: auditorx.javascript.dynamic-eval
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Avoid evaluating dynamic code; use a constrained parser instead.
+    pattern: eval(...)
+  - id: auditorx.go.tls-verification-disabled
+    languages: [go]
+    severity: ERROR
+    message: TLS certificate verification is disabled. Keep InsecureSkipVerify false.
+    pattern: 'tls.Config{..., InsecureSkipVerify: true, ...}'
