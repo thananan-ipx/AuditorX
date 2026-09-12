@@ -260,6 +260,12 @@ backlog and verification details, and [current API contract](docs/api-contract.m
 for the routes that actually exist. The default demo dashboard's scan, AI and prioritization
 data are samples; they are not evidence of a completed repository analysis.
 
+The full academic requirements/design document set (SRS: overview, requirements,
+analysis, architecture, database, API, UI, quality, AI, testing) lives under
+[`docs/srs/`](docs/srs/README.md). Every requirement, use case and design section there
+is annotated with its real implementation status against the current codebase — use it
+as the target scope, not as a description of what already ships today.
+
 Repository metadata persistence and membership checks are now available behind
 `REPOSITORY_STORAGE=postgres`. The default remains `prototype`; migrations are never
 applied automatically. See [repository persistence](docs/repository-persistence.md)
