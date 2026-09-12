@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { WorkspaceError } from "@/features/repositories/components/workspace-feedback";
 import { dashboardHref } from "@/features/repositories/service/repository-service";
+import { useLanguage, type Locale } from "@/lib/i18n";
 import type { Repository } from "@/features/repositories/types";
 import { ScanController, type ScanState } from "../service/scan-controller";
 import { isActive, type Finding, type Scan, type ScanStatus } from "../types";
@@ -27,21 +28,21 @@ const severityStyles = {
   Low: "border-sky-200 bg-sky-50 text-sky-800",
 };
 
-function timestamp(value: string | null) {
-  if (!value) return "Not recorded";
+function timestamp(value: string | null, locale: Locale = "en", translate: (value: string) => string = (value) => value) {
+  if (!value) return translate("Not recorded");
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Not recorded" : new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "medium" }).format(date);
+  return Number.isNaN(date.getTime()) ? translate("Not recorded") : new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en", { dateStyle: "medium", timeStyle: "medium" }).format(date);
 }
 
-export function failureMessage(code: string | null) {
+export function failureMessage(code: string | null, translate: (message: string) => string = (message) => message) {
   switch (code) {
-    case "SOURCE_UNAVAILABLE": return "Source could not be retrieved. Check that the GitHub repository and registered branch are public and available; source size or path limits may also apply.";
-    case "INVALID_COMMIT": return "The source commit could not be verified. No findings were published.";
-    case "SCANNER_FAILED": return "The scanner could not produce valid results. Ask an administrator to check worker logs and scanner configuration.";
-    case "SCAN_TIMEOUT": return "The scan exceeded its time limit. No partial findings were published.";
-    case "ACCESS_REVOKED": return "The requesting user's repository access was revoked before the scan could complete.";
-    case "RETRY_EXHAUSTED": return "The worker could not finish within the allowed attempts. Check worker availability before starting a new scan.";
-    default: return "The scan did not complete. No findings were published; ask an administrator to check the worker.";
+    case "SOURCE_UNAVAILABLE": return translate("Source could not be retrieved. Check that the GitHub repository and registered branch are public and available; source size or path limits may also apply.");
+    case "INVALID_COMMIT": return translate("The source commit could not be verified. No findings were published.");
+    case "SCANNER_FAILED": return translate("The scanner could not produce valid results. Ask an administrator to check worker logs and scanner configuration.");
+    case "SCAN_TIMEOUT": return translate("The scan exceeded its time limit. No partial findings were published.");
+    case "ACCESS_REVOKED": return translate("The requesting user's repository access was revoked before the scan could complete.");
+    case "RETRY_EXHAUSTED": return translate("The worker could not finish within the allowed attempts. Check worker availability before starting a new scan.");
+    default: return translate("The scan did not complete. No findings were published; ask an administrator to check the worker.");
   }
 }
 
@@ -59,38 +60,39 @@ export function ScanWorkspace({ repository, state, canWrite, onStart, onCancel, 
   repository: Repository; state: ScanState; canWrite: boolean;
   onStart: () => void; onCancel: () => void; onSelect: (id: string) => void; onRefresh: () => void;
 }) {
+  const { locale, t } = useLanguage();
   const active = state.jobs.find(isActive);
   return <div className="space-y-5">
     <section className="flex flex-wrap items-end justify-between gap-4">
-      <div><h1 className="text-2xl font-bold tracking-tight md:text-3xl">Repository scans</h1>
-        <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><GitBranch size={15} aria-hidden="true" /><span className="break-all">{repository.branch}</span> · {canWrite ? "Write access" : "Read-only access"}</p>
+      <div><h1 className="text-2xl font-bold tracking-tight md:text-3xl">{t("Repository scans")}</h1>
+        <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><GitBranch size={15} aria-hidden="true" /><span className="break-all">{repository.branch}</span> · {canWrite ? t("Write access") : t("Read-only access")}</p>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" disabled={state.phase === "loading" || !!state.action} onClick={onRefresh}><RefreshCw size={14} aria-hidden="true" />Refresh</Button>
+        <Button variant="outline" disabled={state.phase === "loading" || !!state.action} onClick={onRefresh}><RefreshCw size={14} aria-hidden="true" />{t("Refresh")}</Button>
         <Button disabled={!canWrite || state.phase !== "ready" || !!state.action || !!active} onClick={onStart} className="bg-[#18251e] text-white hover:bg-[#26392e]">
           {state.action === "start" ? <LoaderCircle size={15} className="animate-spin" aria-hidden="true" /> : <Play size={15} aria-hidden="true" />}
-          {state.action === "start" ? "Submitting…" : "Start scan"}
+          {state.action === "start" ? t("Submitting…") : t("Start scan")}
         </Button>
       </div>
     </section>
-    <p className="max-w-3xl text-sm leading-6 text-muted-foreground">Scans public GitHub source using three baseline rules for dynamic eval in Python/JavaScript/TypeScript and disabled TLS verification in Go. This is limited rule coverage, not a comprehensive security audit. No quality score or AI assessment is generated.</p>
-    {!canWrite && <p className="text-sm text-muted-foreground">Only repository owners and editors can start or cancel scans.</p>}
+    <p className="max-w-3xl text-sm leading-6 text-muted-foreground">{t("Scans public GitHub source using three baseline rules for dynamic eval in Python/JavaScript/TypeScript and disabled TLS verification in Go. This is limited rule coverage, not a comprehensive security audit. No quality score or AI assessment is generated.")}</p>
+    {!canWrite && <p className="text-sm text-muted-foreground">{t("Only repository owners and editors can start or cancel scans.")}</p>}
     {state.notice && <p role="status" className="rounded-xl border bg-white p-4 text-sm">{state.notice}</p>}
     {state.phase === "error" ? <WorkspaceError error={state.error} retry={onRefresh} returnTo={dashboardHref(repository.id)} />
       : <>
-        {state.phase === "loading" && <p role="status" className="flex items-center gap-2 rounded-xl border bg-white p-5 text-sm"><LoaderCircle className="animate-spin" size={17} aria-hidden="true" />Loading scan history and results…</p>}
+        {state.phase === "loading" && <p role="status" className="flex items-center gap-2 rounded-xl border bg-white p-5 text-sm"><LoaderCircle className="animate-spin" size={17} aria-hidden="true" />{t("Loading scan history and results…")}</p>}
         {state.phase === "ready" && state.jobs.length === 0 && !state.selected && <Card><CardContent className="space-y-3 py-12 text-center">
-          <Clock3 className="mx-auto text-slate-400" size={32} aria-hidden="true" /><h2 className="text-xl font-semibold">No scans yet</h2>
-          <p className="text-sm text-muted-foreground">{canWrite ? "Start a scan to queue this branch for analysis." : "An owner or editor can start the first scan."} Results appear only after a scan completes.</p>
+          <Clock3 className="mx-auto text-slate-400" size={32} aria-hidden="true" /><h2 className="text-xl font-semibold">{t("No scans yet")}</h2>
+          <p className="text-sm text-muted-foreground">{canWrite ? t("Start a scan to queue this branch for analysis.") : t("An owner or editor can start the first scan.")} {t("Results appear only after a scan completes.")}</p>
         </CardContent></Card>}
-        {active && <p role="status" className="rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">An active scan is {statusLabels[active.status].toLowerCase()}. Status refreshes every 3 seconds while work is active. A queued job does not confirm that a worker is online.</p>}
+        {active && <p role="status" className="rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">{locale === "th" ? `มีการสแกนที่กำลังทำงานในสถานะ ${t(statusLabels[active.status])} ระบบจะรีเฟรชสถานะทุก 3 วินาทีขณะทำงาน และงานที่อยู่ในคิวไม่ได้ยืนยันว่าระบบประมวลผลออนไลน์` : `An active scan is ${statusLabels[active.status].toLowerCase()}. Status refreshes every 3 seconds while work is active. A queued job does not confirm that a worker is online.`}</p>}
         {(state.jobs.length > 0 || state.selected) && <div className="grid items-start gap-5 xl:grid-cols-[300px_minmax(0,1fr)]">
-          <Card><CardHeader><CardTitle>Scan history</CardTitle><CardDescription>Latest 20 scans · newest first</CardDescription></CardHeader>
+          <Card><CardHeader><CardTitle>{t("Scan history")}</CardTitle><CardDescription>{t("Latest 20 scans · newest first")}</CardDescription></CardHeader>
             <CardContent><ul className="max-h-[600px] space-y-2 overflow-y-auto">
               {state.jobs.map((scan) => <li key={scan.id}><button type="button" disabled={!!state.action} aria-pressed={state.selected?.id === scan.id} onClick={() => onSelect(scan.id)}
                 className="w-full rounded-xl border p-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700 disabled:opacity-50 aria-pressed:border-lime-500 aria-pressed:bg-lime-50/60">
-                <div className="flex items-center justify-between gap-2"><Badge className={statusStyles[scan.status]}>{statusLabels[scan.status]}</Badge><span className="font-mono text-xs text-muted-foreground">{scan.id.slice(0, 8)}</span></div>
-                <time dateTime={scan.created_at} className="mt-2 block text-xs text-muted-foreground">{timestamp(scan.created_at)}</time>
+                <div className="flex items-center justify-between gap-2"><Badge className={statusStyles[scan.status]}>{t(statusLabels[scan.status])}</Badge><span className="font-mono text-xs text-muted-foreground">{scan.id.slice(0, 8)}</span></div>
+                <time dateTime={scan.created_at} className="mt-2 block text-xs text-muted-foreground">{timestamp(scan.created_at, locale, t)}</time>
                 <span className="mt-1 block break-all text-xs">{scan.branch}</span>
               </button></li>)}
             </ul></CardContent>
@@ -98,24 +100,25 @@ export function ScanWorkspace({ repository, state, canWrite, onStart, onCancel, 
           {state.selected ? <div className="min-w-0 space-y-5">
             <ScanDetails scan={state.selected} canCancel={canWrite && isActive(state.selected)} cancelling={state.action === "cancel"} busy={!!state.action} onCancel={onCancel} />
             {state.selected.status === "completed" && state.findings !== null && <Findings key={state.selected.id} findings={state.findings} />}
-          </div> : <p className="p-5 text-sm text-muted-foreground">Loading the selected scan…</p>}
+          </div> : <p className="p-5 text-sm text-muted-foreground">{t("Loading the selected scan…")}</p>}
         </div>}
       </>}
   </div>;
 }
 
 function ScanDetails({ scan, canCancel, cancelling, busy, onCancel }: { scan: Scan; canCancel: boolean; cancelling: boolean; busy: boolean; onCancel: () => void }) {
-  return <Card><CardHeader className="flex-row items-center justify-between gap-3"><div><CardTitle>Scan details</CardTitle><CardDescription className="break-all font-mono">{scan.id}</CardDescription></div><Badge className={statusStyles[scan.status]}>{statusLabels[scan.status]}</Badge></CardHeader>
+  const { locale, t } = useLanguage();
+  return <Card><CardHeader className="flex-row items-center justify-between gap-3"><div><CardTitle>{t("Scan details")}</CardTitle><CardDescription className="break-all font-mono">{scan.id}</CardDescription></div><Badge className={statusStyles[scan.status]}>{t(statusLabels[scan.status])}</Badge></CardHeader>
     <CardContent className="space-y-5">
-      <p role="status" className="text-sm leading-6">{scan.status === "queued" ? "Waiting for a worker. There is no completion estimate yet."
-        : scan.status === "running" ? `Source retrieval or analysis is in progress (attempt ${scan.attempts}). Findings are published together when the scan completes.`
-        : scan.status === "failed" ? failureMessage(scan.error_code)
-        : scan.status === "cancelled" ? "This scan was cancelled and cannot publish findings. An already-running analyzer may continue until it stops or times out."
-        : "Analysis completed. The findings below belong to this scan and its recorded commit."}</p>
+      <p role="status" className="text-sm leading-6">{scan.status === "queued" ? t("Waiting for a worker. There is no completion estimate yet.")
+        : scan.status === "running" ? locale === "th" ? `กำลังดึงซอร์สโค้ดหรือวิเคราะห์ (ครั้งที่ ${scan.attempts}) ผลตรวจทั้งหมดจะเผยแพร่พร้อมกันเมื่อการสแกนเสร็จสิ้น` : `Source retrieval or analysis is in progress (attempt ${scan.attempts}). Findings are published together when the scan completes.`
+        : scan.status === "failed" ? failureMessage(scan.error_code, t)
+        : scan.status === "cancelled" ? t("This scan was cancelled and cannot publish findings. An already-running analyzer may continue until it stops or times out.")
+        : t("Analysis completed. The findings below belong to this scan and its recorded commit.")}</p>
       <dl className="grid gap-4 text-sm sm:grid-cols-2">
-        {[["Branch", scan.branch], ["Commit", scan.commit_sha ?? "Not recorded"], ["Rules", scan.rules_version], ["Scanner", scan.scanner_version ?? "Not recorded"], ["Queued", timestamp(scan.created_at)], ["Started", timestamp(scan.started_at)], ["Finished", timestamp(scan.finished_at)]].map(([label, value]) => <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-1 break-all font-mono text-xs">{value}</dd></div>)}
+        {[["Branch", scan.branch], ["Commit", scan.commit_sha ?? t("Not recorded")], ["Rules", scan.rules_version], ["Scanner", scan.scanner_version ?? t("Not recorded")], ["Queued", timestamp(scan.created_at, locale, t)], ["Started", timestamp(scan.started_at, locale, t)], ["Finished", timestamp(scan.finished_at, locale, t)]].map(([label, value]) => <div key={label}><dt className="text-xs text-muted-foreground">{t(label)}</dt><dd className="mt-1 break-all font-mono text-xs">{value}</dd></div>)}
       </dl>
-      {canCancel && <Button variant="outline" disabled={busy} onClick={onCancel}><Square size={13} aria-hidden="true" />{cancelling ? "Cancelling…" : "Cancel scan"}</Button>}
+      {canCancel && <Button variant="outline" disabled={busy} onClick={onCancel}><Square size={13} aria-hidden="true" />{cancelling ? t("Cancelling…") : t("Cancel scan")}</Button>}
     </CardContent>
   </Card>;
 }
@@ -127,6 +130,7 @@ export function filterFindings(findings: Finding[], severity: string, query: str
 }
 
 function Findings({ findings }: { findings: Finding[] }) {
+  const { t } = useLanguage();
   const [severity, setSeverity] = useState("All");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
@@ -134,21 +138,21 @@ function Findings({ findings }: { findings: Finding[] }) {
   const pageSize = 50;
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, pageCount - 1);
-  return <Card><CardHeader><CardTitle>Findings <span className="ml-2 text-muted-foreground">{findings.length}</span></CardTitle><CardDescription>Rule matches for the selected scan · up to 1,000 findings</CardDescription></CardHeader>
+  return <Card><CardHeader><CardTitle>{t("Findings")} <span className="ml-2 text-muted-foreground">{findings.length}</span></CardTitle><CardDescription>{t("Rule matches for the selected scan · up to 1,000 findings")}</CardDescription></CardHeader>
     <CardContent className="space-y-5">
-      <div className="grid grid-cols-3 gap-3">{(["High", "Medium", "Low"] as const).map((level) => <div key={level} className="rounded-xl border bg-slate-50 p-3"><p className="text-xs text-muted-foreground">{level}</p><p className="mt-1 text-xl font-semibold">{findings.filter((finding) => finding.severity === level).length}</p></div>)}</div>
-      {findings.length === 0 ? <p className="rounded-xl border border-lime-200 bg-lime-50 p-4 text-sm leading-6">No findings matched the configured rules. This does not mean the repository is free of vulnerabilities or that every file was analyzed.</p> : <>
+      <div className="grid grid-cols-3 gap-3">{(["High", "Medium", "Low"] as const).map((level) => <div key={level} className="rounded-xl border bg-slate-50 p-3"><p className="text-xs text-muted-foreground">{t(level)}</p><p className="mt-1 text-xl font-semibold">{findings.filter((finding) => finding.severity === level).length}</p></div>)}</div>
+      {findings.length === 0 ? <p className="rounded-xl border border-lime-200 bg-lime-50 p-4 text-sm leading-6">{t("No findings matched the configured rules. This does not mean the repository is free of vulnerabilities or that every file was analyzed.")}</p> : <>
         <div className="flex flex-wrap gap-3">
-          <label className="flex-1 text-xs font-medium">Search findings<input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(0); }} placeholder="File, rule or message" className="mt-1 block w-full min-w-48 rounded-lg border bg-white px-3 py-2 text-sm outline-offset-2" /></label>
-          <label className="text-xs font-medium">Severity<select value={severity} onChange={(event) => { setSeverity(event.target.value); setPage(0); }} className="mt-1 block rounded-lg border bg-white px-3 py-2 text-sm">{["All", "High", "Medium", "Low"].map((level) => <option key={level}>{level}</option>)}</select></label>
+          <label className="flex-1 text-xs font-medium">{t("Search findings")}<input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(0); }} placeholder={t("File, rule or message")} className="mt-1 block w-full min-w-48 rounded-lg border bg-white px-3 py-2 text-sm outline-offset-2" /></label>
+          <label className="text-xs font-medium">{t("Severity")}<select value={severity} onChange={(event) => { setSeverity(event.target.value); setPage(0); }} className="mt-1 block rounded-lg border bg-white px-3 py-2 text-sm">{["All", "High", "Medium", "Low"].map((level) => <option key={level} value={level}>{t(level)}</option>)}</select></label>
         </div>
-        <p role="status" className="text-xs text-muted-foreground">{filtered.length} of {findings.length} findings match</p>
-        {filtered.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">No findings match these filters.</p> : <ul className="divide-y">{filtered.slice(currentPage * pageSize, (currentPage + 1) * pageSize).map((finding) => <li key={finding.fingerprint} className="space-y-2 py-4 first:pt-0">
+        <p role="status" className="text-xs text-muted-foreground">{filtered.length} {t("of")} {findings.length} {t("findings match")}</p>
+        {filtered.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">{t("No findings match these filters.")}</p> : <ul className="divide-y">{filtered.slice(currentPage * pageSize, (currentPage + 1) * pageSize).map((finding) => <li key={finding.fingerprint} className="space-y-2 py-4 first:pt-0">
           <div className="flex items-start justify-between gap-3"><p className="break-words text-sm font-medium">{finding.message}</p><Badge className={severityStyles[finding.severity]}>{finding.severity}</Badge></div>
           <p className="break-all font-mono text-xs text-muted-foreground">{finding.file}:{finding.line}{finding.end_line > finding.line ? `–${finding.end_line}` : ""}</p>
-          <p className="break-all text-xs text-muted-foreground">Rule: {finding.rule_id}</p>
+          <p className="break-all text-xs text-muted-foreground">{t("Rule")}: {finding.rule_id}</p>
         </li>)}</ul>}
-        {pageCount > 1 && <div className="flex items-center justify-between gap-3"><Button variant="outline" size="sm" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>Previous</Button><p className="text-xs">Page {currentPage + 1} of {pageCount}</p><Button variant="outline" size="sm" disabled={currentPage + 1 >= pageCount} onClick={() => setPage(currentPage + 1)}>Next</Button></div>}
+        {pageCount > 1 && <div className="flex items-center justify-between gap-3"><Button variant="outline" size="sm" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>{t("Previous")}</Button><p className="text-xs">{t("Page")} {currentPage + 1} {t("of")} {pageCount}</p><Button variant="outline" size="sm" disabled={currentPage + 1 >= pageCount} onClick={() => setPage(currentPage + 1)}>{t("Next")}</Button></div>}
       </>}
     </CardContent>
   </Card>;

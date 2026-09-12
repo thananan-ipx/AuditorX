@@ -28,7 +28,7 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
   --color-ring: var(--ring);
-  --font-sans: "Inter", "Noto Sans Thai", "Segoe UI", sans-serif;
+  --font-sans: var(--font-noto-sans-thai), "Noto Sans Thai", "Segoe UI", sans-serif;
 }
 
 * { border-color: var(--border); }
@@ -37,4 +37,3 @@ body { margin: 0; background: var(--background); color: var(--foreground); font-
 button, input { font: inherit; }
 button { cursor: pointer; }
 ::selection { background: #d9f69b; color: #172019; }
-

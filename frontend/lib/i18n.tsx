@@ -1,0 +1,214 @@
+"use client";
+
+import { createContext, useContext, useEffect, useMemo, useSyncExternalStore } from "react";
+
+export type Locale = "en" | "th";
+
+const STORAGE_KEY = "auditorx-locale";
+const CHANGE_EVENT = "auditorx-locale-change";
+
+const thai: Record<string, string> = {
+  "Code Intelligence": "ระบบวิเคราะห์โค้ด",
+  "Code intelligence workspace": "พื้นที่ทำงานวิเคราะห์โค้ด",
+  Workspace: "พื้นที่ทำงาน",
+  Management: "การจัดการ",
+  Overview: "ภาพรวม",
+  Repositories: "คลังโค้ด",
+  Issues: "ปัญหา",
+  "Scan history": "ประวัติการสแกน",
+  Reports: "รายงาน",
+  Team: "ทีม",
+  "Model evaluation": "ประเมินโมเดล",
+  Settings: "การตั้งค่า",
+  Soon: "เร็ว ๆ นี้",
+  "Not available yet": "ยังไม่พร้อมใช้งาน",
+  "Your workspace": "พื้นที่ทำงานของคุณ",
+  "AuditorX account": "บัญชี AuditorX",
+  "Open menu": "เปิดเมนู",
+  "Close menu": "ปิดเมนู",
+  "Close navigation": "ปิดแถบนำทาง",
+  "Sign out": "ออกจากระบบ",
+  "Sign in to your workspace": "เข้าสู่ระบบพื้นที่ทำงาน",
+  "Use your email and password, or create an account.": "ใช้อีเมลและรหัสผ่าน หรือสร้างบัญชีใหม่",
+  Email: "อีเมล",
+  Password: "รหัสผ่าน",
+  "At least 8 characters": "อย่างน้อย 8 ตัวอักษร",
+  "Please wait…": "กรุณารอสักครู่…",
+  "Sign in": "เข้าสู่ระบบ",
+  "Create account": "สร้างบัญชี",
+  "Check your email to confirm your account, then sign in.": "ตรวจสอบอีเมลเพื่อยืนยันบัญชี แล้วจึงเข้าสู่ระบบ",
+  "Authentication failed.": "การยืนยันตัวตนล้มเหลว",
+  "Switch language": "สลับภาษา",
+  English: "English",
+  Thai: "ไทย",
+  "Workspace overview": "ภาพรวมพื้นที่ทำงาน",
+  "Choose repository": "เลือกคลังโค้ด",
+  "Repository overview": "ภาพรวมคลังโค้ด",
+  "Demo request accepted. No code was scanned and these sample results have not changed.": "ระบบรับคำขอเดโมแล้ว ไม่มีการสแกนโค้ดและผลลัพธ์ตัวอย่างยังไม่เปลี่ยนแปลง",
+  "Here’s what changed in your codebase since the last scan.": "ดูสิ่งที่เปลี่ยนแปลงในโค้ดตั้งแต่การสแกนครั้งล่าสุด",
+  "Simulating…": "กำลังจำลอง…",
+  "Simulate scan": "จำลองการสแกน",
+  "Scanner not available yet": "ระบบสแกนยังไม่พร้อมใช้งาน",
+  "Last scanned": "สแกนล่าสุด",
+  "Code quality score": "คะแนนคุณภาพโค้ด",
+  "out of 100": "จาก 100",
+  Good: "ดี",
+  "Improved since the previous scan. Keep addressing high-priority findings.": "ดีขึ้นจากการสแกนครั้งก่อน โปรดแก้ไขรายการที่มีความสำคัญสูงต่อไป",
+  "Issues by severity": "ปัญหาตามระดับความรุนแรง",
+  "Predicted priority": "ลำดับความสำคัญที่คาดการณ์",
+  "AI model": "โมเดล AI",
+  fallback: "ใช้ค่าทดแทน",
+  "Quality trend": "แนวโน้มคุณภาพ",
+  "Score and open issues across the last five scans": "คะแนนและปัญหาที่ยังเปิดอยู่จากห้าการสแกนล่าสุด",
+  "Last 30 days": "30 วันที่ผ่านมา",
+  Latest: "ล่าสุด",
+  "Quality score": "คะแนนคุณภาพ",
+  "Open issues": "ปัญหาที่ยังเปิดอยู่",
+  "AI analysis": "การวิเคราะห์ด้วย AI",
+  "Grounded in scan": "อ้างอิงจากการสแกน",
+  Ready: "พร้อม",
+  "Top recommendation": "คำแนะนำสำคัญ",
+  "Open full AI analysis": "เปิดผลวิเคราะห์ AI ฉบับเต็ม",
+  "Priority issues": "ปัญหาสำคัญ",
+  "Findings that need your attention first": "รายการที่ควรได้รับการแก้ไขก่อน",
+  "View all": "ดูทั้งหมด",
+  "Finding categories": "หมวดหมู่รายการตรวจพบ",
+  "Where the current issues are concentrated": "จุดที่มีปัญหาสะสมอยู่ในขณะนี้",
+  "Workspace / Repositories": "พื้นที่ทำงาน / คลังโค้ด",
+  "Choose a repository to open its dashboard, or register a GitHub URL.": "เลือกคลังโค้ดเพื่อเปิดแดชบอร์ด หรือลงทะเบียน URL จาก GitHub",
+  "Loading repositories…": "กำลังโหลดคลังโค้ด…",
+  "Your repositories": "คลังโค้ดของคุณ",
+  "Refresh list": "รีเฟรชรายการ",
+  "No more repositories. Go back to the previous page.": "ไม่มีคลังโค้ดเพิ่มเติม โปรดกลับไปหน้าก่อนหน้า",
+  Branch: "บรานช์",
+  "Sample data": "ข้อมูลตัวอย่าง",
+  "Open dashboard": "เปิดแดชบอร์ด",
+  Previous: "ก่อนหน้า",
+  Page: "หน้า",
+  Next: "ถัดไป",
+  "Add repository": "เพิ่มคลังโค้ด",
+  "Save repository details to your workspace. No code is downloaded and no GitHub permission is requested.": "บันทึกรายละเอียดคลังโค้ดในพื้นที่ทำงาน โดยไม่ดาวน์โหลดโค้ดหรือขอสิทธิ์จาก GitHub",
+  "GitHub repository URL": "URL คลังโค้ด GitHub",
+  "Use an HTTPS GitHub URL without credentials, query parameters or a file path.": "ใช้ URL GitHub แบบ HTTPS โดยไม่มีข้อมูลเข้าสู่ระบบ พารามิเตอร์ หรือพาธไฟล์",
+  "Repository saved.": "บันทึกคลังโค้ดแล้ว",
+  "Open its dashboard": "เปิดแดชบอร์ด",
+  "Saving repository…": "กำลังบันทึกคลังโค้ด…",
+  "Blank branch defaults to main. Repository access and branch existence are not checked yet.": "หากไม่ระบุบรานช์ ระบบจะใช้ main โดยยังไม่มีการตรวจสอบสิทธิ์และการมีอยู่ของบรานช์",
+  "Your session has expired. Sign in again to continue.": "เซสชันหมดอายุ โปรดเข้าสู่ระบบอีกครั้งเพื่อดำเนินการต่อ",
+  "You do not have permission to perform this action.": "คุณไม่มีสิทธิ์ดำเนินการนี้",
+  "This repository was not found or is no longer accessible.": "ไม่พบคลังโค้ดนี้หรือไม่สามารถเข้าถึงได้อีกต่อไป",
+  "This repository is already registered. Choose it from the list below.": "คลังโค้ดนี้ลงทะเบียนแล้ว โปรดเลือกจากรายการด้านล่าง",
+  "The scan worker is not available yet. No scan was queued.": "ระบบประมวลผลการสแกนยังไม่พร้อม จึงไม่มีการเพิ่มงานลงคิว",
+  "The API or repository storage is unavailable. Please try again later.": "API หรือพื้นที่จัดเก็บคลังโค้ดไม่พร้อมใช้งาน โปรดลองอีกครั้งภายหลัง",
+  "The request could not be completed. Check your connection and try again.": "ดำเนินการตามคำขอไม่สำเร็จ โปรดตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง",
+  "Sign in required": "จำเป็นต้องเข้าสู่ระบบ",
+  "Unable to load workspace": "ไม่สามารถโหลดพื้นที่ทำงาน",
+  "Try again": "ลองอีกครั้ง",
+  "Demo workspace — repositories, findings and scan responses are sample data. Adding repositories is unavailable in this mode.": "พื้นที่ทำงานเดโม — คลังโค้ด รายการตรวจพบ และผลการสแกนเป็นข้อมูลตัวอย่าง โหมดนี้ไม่สามารถเพิ่มคลังโค้ดได้",
+  "Persistent workspace — only repositories you can access are listed. Registering a URL does not connect GitHub or scan its code.": "พื้นที่ทำงานถาวร — แสดงเฉพาะคลังโค้ดที่คุณเข้าถึงได้ การลงทะเบียน URL ไม่ได้เชื่อมต่อ GitHub หรือสแกนโค้ด",
+  "No repositories yet": "ยังไม่มีคลังโค้ด",
+  "Add a GitHub repository to start organizing your workspace.": "เพิ่มคลังโค้ด GitHub เพื่อเริ่มจัดพื้นที่ทำงาน",
+  "There are no repositories available in this workspace.": "ไม่มีคลังโค้ดที่พร้อมใช้งานในพื้นที่ทำงานนี้",
+  "Scan queue unavailable": "คิวสแกนไม่พร้อมใช้งาน",
+  "Your repository is saved. Scan controls and real results require the scan queue to be enabled on the API. This page has not queued a scan.": "บันทึกคลังโค้ดแล้ว ส่วนควบคุมและผลสแกนจริงต้องเปิดใช้คิวสแกนบน API โดยหน้านี้ยังไม่ได้เพิ่มงานสแกนลงคิว",
+  "Repository scans": "การสแกนคลังโค้ด",
+  "Write access": "สิทธิ์แก้ไข",
+  "Read-only access": "สิทธิ์อ่านอย่างเดียว",
+  Refresh: "รีเฟรช",
+  "Submitting…": "กำลังส่ง…",
+  "Start scan": "เริ่มสแกน",
+  "Scans public GitHub source using three baseline rules for dynamic eval in Python/JavaScript/TypeScript and disabled TLS verification in Go. This is limited rule coverage, not a comprehensive security audit. No quality score or AI assessment is generated.": "สแกนซอร์สโค้ด GitHub สาธารณะด้วยกฎพื้นฐาน 3 ข้อ ได้แก่ dynamic eval ใน Python/JavaScript/TypeScript และการปิดตรวจสอบ TLS ใน Go เป็นการตรวจแบบจำกัด ไม่ใช่การตรวจสอบความปลอดภัยอย่างครอบคลุม และไม่มีการสร้างคะแนนคุณภาพหรือผลประเมินด้วย AI",
+  "Only repository owners and editors can start or cancel scans.": "เฉพาะเจ้าของและผู้แก้ไขคลังโค้ดเท่านั้นที่เริ่มหรือยกเลิกการสแกนได้",
+  "Loading scan history and results…": "กำลังโหลดประวัติและผลการสแกน…",
+  "No scans yet": "ยังไม่มีการสแกน",
+  "Start a scan to queue this branch for analysis.": "เริ่มสแกนเพื่อเพิ่มบรานช์นี้เข้าคิววิเคราะห์",
+  "An owner or editor can start the first scan.": "เจ้าของหรือผู้แก้ไขสามารถเริ่มการสแกนครั้งแรกได้",
+  "Results appear only after a scan completes.": "ผลลัพธ์จะแสดงเมื่อการสแกนเสร็จสิ้นเท่านั้น",
+  "Latest 20 scans · newest first": "20 การสแกนล่าสุด · ใหม่สุดก่อน",
+  "Loading the selected scan…": "กำลังโหลดการสแกนที่เลือก…",
+  "Scan details": "รายละเอียดการสแกน",
+  Queued: "อยู่ในคิว",
+  Running: "กำลังทำงาน",
+  Completed: "เสร็จสิ้น",
+  Failed: "ล้มเหลว",
+  Cancelled: "ยกเลิกแล้ว",
+  "Not recorded": "ไม่มีข้อมูล",
+  Commit: "คอมมิต",
+  Rules: "กฎ",
+  Scanner: "ระบบสแกน",
+  Started: "เริ่มเมื่อ",
+  Finished: "เสร็จเมื่อ",
+  "Cancelling…": "กำลังยกเลิก…",
+  "Cancel scan": "ยกเลิกการสแกน",
+  "Waiting for a worker. There is no completion estimate yet.": "กำลังรอระบบประมวลผล และยังไม่สามารถประมาณเวลาเสร็จได้",
+  "Source could not be retrieved. Check that the GitHub repository and registered branch are public and available; source size or path limits may also apply.": "ไม่สามารถดึงซอร์สโค้ดได้ โปรดตรวจสอบว่าคลังโค้ด GitHub และบรานช์ที่ลงทะเบียนเป็นสาธารณะและเข้าถึงได้ รวมถึงข้อจำกัดด้านขนาดหรือพาธ",
+  "The source commit could not be verified. No findings were published.": "ไม่สามารถยืนยันคอมมิตของซอร์สโค้ด จึงไม่มีการเผยแพร่ผลตรวจ",
+  "The scanner could not produce valid results. Ask an administrator to check worker logs and scanner configuration.": "ระบบสแกนไม่สามารถสร้างผลลัพธ์ที่ถูกต้อง โปรดให้ผู้ดูแลตรวจสอบบันทึกการทำงานและการตั้งค่าระบบสแกน",
+  "The scan exceeded its time limit. No partial findings were published.": "การสแกนเกินเวลาที่กำหนด และไม่มีการเผยแพร่ผลตรวจบางส่วน",
+  "The requesting user's repository access was revoked before the scan could complete.": "สิทธิ์เข้าถึงคลังโค้ดของผู้ขอถูกยกเลิกก่อนการสแกนเสร็จสิ้น",
+  "The worker could not finish within the allowed attempts. Check worker availability before starting a new scan.": "ระบบประมวลผลทำงานไม่สำเร็จภายในจำนวนครั้งที่กำหนด โปรดตรวจสอบความพร้อมก่อนเริ่มสแกนใหม่",
+  "The scan did not complete. No findings were published; ask an administrator to check the worker.": "การสแกนไม่เสร็จสิ้นและไม่มีการเผยแพร่ผลตรวจ โปรดให้ผู้ดูแลตรวจสอบระบบประมวลผล",
+  "This scan was cancelled and cannot publish findings. An already-running analyzer may continue until it stops or times out.": "การสแกนนี้ถูกยกเลิกและไม่สามารถเผยแพร่ผลตรวจได้ ตัววิเคราะห์ที่เริ่มทำงานแล้วอาจทำงานต่อจนหยุดหรือหมดเวลา",
+  "Analysis completed. The findings below belong to this scan and its recorded commit.": "วิเคราะห์เสร็จสิ้น รายการด้านล่างเป็นผลของการสแกนนี้และคอมมิตที่บันทึกไว้",
+  Findings: "รายการตรวจพบ",
+  "Rule matches for the selected scan · up to 1,000 findings": "ผลที่ตรงกับกฎสำหรับการสแกนที่เลือก · สูงสุด 1,000 รายการ",
+  "Search findings": "ค้นหารายการตรวจพบ",
+  "File, rule or message": "ไฟล์ กฎ หรือข้อความ",
+  Severity: "ระดับความรุนแรง",
+  All: "ทั้งหมด",
+  High: "สูง",
+  Medium: "ปานกลาง",
+  Low: "ต่ำ",
+  Critical: "วิกฤต",
+  Rule: "กฎ",
+  "No findings match these filters.": "ไม่มีรายการตรวจพบที่ตรงกับตัวกรอง",
+  "findings match": "รายการที่ตรงกัน",
+  of: "จาก",
+  "No findings matched the configured rules. This does not mean the repository is free of vulnerabilities or that every file was analyzed.": "ไม่พบรายการที่ตรงกับกฎที่ตั้งไว้ แต่ไม่ได้หมายความว่าคลังโค้ดไม่มีช่องโหว่หรือทุกไฟล์ได้รับการวิเคราะห์แล้ว",
+};
+
+type LanguageContextValue = {
+  locale: Locale;
+  setLocale: (locale: Locale) => void;
+  t: (english: string) => string;
+};
+
+const LanguageContext = createContext<LanguageContextValue>({
+  locale: "en",
+  setLocale: () => undefined,
+  t: (english) => english,
+});
+
+export function LanguageProvider({ children }: Readonly<{ children: React.ReactNode }>) {
+  const locale = useSyncExternalStore<Locale>(
+    (notify) => {
+      window.addEventListener("storage", notify);
+      window.addEventListener(CHANGE_EVENT, notify);
+      return () => {
+        window.removeEventListener("storage", notify);
+        window.removeEventListener(CHANGE_EVENT, notify);
+      };
+    },
+    () => window.localStorage.getItem(STORAGE_KEY) === "th" ? "th" : "en",
+    () => "en",
+  );
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
+  const value = useMemo<LanguageContextValue>(() => ({
+    locale,
+    setLocale: (nextLocale) => {
+      window.localStorage.setItem(STORAGE_KEY, nextLocale);
+      window.dispatchEvent(new Event(CHANGE_EVENT));
+    },
+    t: (english) => locale === "th" ? thai[english] ?? english : english,
+  }), [locale]);
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+}
+
+export function useLanguage() {
+  return useContext(LanguageContext);
+}
