@@ -73,6 +73,30 @@ as a dev dependency in `tools/database-tests`. It uses the existing migrations o
 it is not linked to a cloud project. Docker Desktop **4.88.1** was used for the verified
 Windows setup. Install dependencies, then use the pinned CLI from the repository root:
 
+For normal interactive testing, one command starts Docker Desktop when needed, local
+Supabase, the API, scan worker and frontend. It prints the app/Studio/Mailpit URLs and
+keeps running until `Ctrl+C`; local credentials stay in child-process environments and
+logs go under ignored `.local/logs/`:
+
+```powershell
+.\scripts\dev-local.ps1
+```
+
+Use `.\scripts\dev-local.ps1 -SmokeTest` to start every layer, check API/frontend readiness,
+then stop automatically. By default the script stops only the Supabase instance it started
+and preserves its database backup. `-KeepSupabase` leaves that instance running.
+
+Supabase uses the `auditorx-supabase-local` Docker network configured for `127.0.0.1`.
+Some Docker Desktop versions still publish those ports to all interfaces; on those hosts the
+script asks for confirmation before startup. On a trusted network, pass `-AllowLanExposure`
+to skip that prompt (including when using `-SmokeTest`). Never use this flag on public Wi-Fi.
+
+At startup the script provisions a randomly named, dedicated `NOINHERIT` worker login with
+membership only in `auditorx_scan_worker` and an in-memory password. It removes that temporary
+login on shutdown. The API database login is not granted the worker role.
+
+The lower-level commands remain available for database-only work:
+
 ```powershell
 npm --prefix tools/database-tests ci
 $supabase = ".\tools\database-tests\node_modules\.bin\supabase.cmd"

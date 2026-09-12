@@ -22,6 +22,7 @@ __pycache__/
 
 # production
 /build
+/.local/
 /supabase/.temp/
 /supabase/.branches/
 
