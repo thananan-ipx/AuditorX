@@ -29,7 +29,7 @@ func main() {
 	defer stop()
 	pool, err := database.Connect(ctx, dsn)
 	if err != nil {
-		slog.Error("worker database connection failed")
+		slog.Error("worker database connection failed", "error", err)
 		os.Exit(1)
 	}
 	defer pool.Close()

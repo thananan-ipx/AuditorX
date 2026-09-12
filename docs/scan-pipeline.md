@@ -22,7 +22,7 @@ on the web dashboard. No production/shared database was migrated or worker deplo
   that SHA's ZIP from codeload.github.com. Requests use fixed GitHub hosts, no credentials,
   no configured HTTP proxy, and reject redirects. Private repositories and renamed-repo
   redirects are intentionally unsupported in this slice.
-- Archives are bounded to 10 MiB compressed, 20 MiB extracted supported source, 2,000 entries,
+- Archives are bounded to 20 MiB compressed, 20 MiB extracted supported source, 2,000 entries,
   1,000 supported files and 1 MiB per supported file. Unsafe paths, Windows reserved names,
   duplicate case-insensitive paths, multiple roots and symlinks are rejected.
 - Only `.py`, `.js`, `.ts`, `.go` regular files are extracted. Hidden directories, vendor,

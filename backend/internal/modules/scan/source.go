@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-const maxArchiveBytes = 10 << 20
+const maxArchiveBytes = 20 << 20
 const maxSourceBytes = 20 << 20
 const maxFileBytes = 1 << 20
 

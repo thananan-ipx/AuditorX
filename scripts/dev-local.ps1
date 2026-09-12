@@ -182,7 +182,7 @@ try {
         throw 'Local Supabase status did not include the required URLs and publishable key.'
     }
     $localDatabaseUrl = [string]$local.DB_URL
-    $localDatabaseUrl += if ($localDatabaseUrl.Contains('?')) { '&sslmode=disable' } else { '?sslmode=disable' }
+    $localDatabaseUrl += if ($localDatabaseUrl.IndexOf('?', [System.StringComparison]::Ordinal) -ge 0) { '&sslmode=disable' } else { '?sslmode=disable' }
 
     Write-Host 'Provisioning a dedicated local scan-worker login...'
     $workerLogin = 'auditorx_scan_worker_local_' + [guid]::NewGuid().ToString('N').Substring(0, 12)
@@ -206,8 +206,11 @@ GRANT auditorx_scan_worker TO __LOGIN__;
         throw "Unable to provision the dedicated local scan-worker login. $safeProvisionOutput"
     }
 
-    $schemeEnd = $localDatabaseUrl.IndexOf('://') + 3
-    $credentialsEnd = $localDatabaseUrl.IndexOf('@', $schemeEnd)
+    # Ordinal comparison is required: culture-aware IndexOf (the default) treats ':' and '/'
+    # as ignorable under some locales (e.g. Thai), which silently returns index 0 and corrupts
+    # this URL surgery instead of throwing.
+    $schemeEnd = $localDatabaseUrl.IndexOf('://', [System.StringComparison]::Ordinal) + 3
+    $credentialsEnd = $localDatabaseUrl.IndexOf('@', $schemeEnd, [System.StringComparison]::Ordinal)
     if ($schemeEnd -lt 3 -or $credentialsEnd -lt $schemeEnd) {
         throw 'Local Supabase returned an unsupported database URL.'
     }
