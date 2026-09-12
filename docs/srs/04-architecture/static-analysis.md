@@ -9,9 +9,11 @@
 ## 0. Implementation Status (as of 2026-09-12)
 
 Implemented: the scan worker (`backend/internal/modules/scan`) invokes **Semgrep CE 1.175.0**
-as a CLI subprocess with a fixed, embedded custom ruleset called **`baseline-v1`**, containing
-exactly **3 rules** (Python/JS/TS dynamic-`eval` detection, and Go disabled-TLS-verification
-detection). This is a **fixed baseline, not yet a configurable/pluggable rule-set system** —
+as a CLI subprocess. New scans use the fixed, embedded **`baseline-v2`** ruleset containing
+**14 rules** for dynamic eval, disabled TLS verification, hardcoded secrets, shell command
+execution, SQL string construction, sensitive logging and ignored Go JSON errors. The worker
+also retains embedded `baseline-v1` support for historical or already-queued jobs. This is a
+**versioned fixed baseline, not yet a configurable/pluggable rule-set system** —
 sections 4 ("selected rules"), 6 and 8 ("Rule set should be configurable by language and scan
 profile") below describe the target design, not the current behavior. Metrics/telemetry are
 disabled, no network config/cache is inherited from the host, and each run uses a fresh

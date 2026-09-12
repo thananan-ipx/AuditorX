@@ -117,7 +117,7 @@ const thai: Record<string, string> = {
   Refresh: "รีเฟรช",
   "Submitting…": "กำลังส่ง…",
   "Start scan": "เริ่มสแกน",
-  "Scans public GitHub source using three baseline rules for dynamic eval in Python/JavaScript/TypeScript and disabled TLS verification in Go. This is limited rule coverage, not a comprehensive security audit. No quality score or AI assessment is generated.": "สแกนซอร์สโค้ด GitHub สาธารณะด้วยกฎพื้นฐาน 3 ข้อ ได้แก่ dynamic eval ใน Python/JavaScript/TypeScript และการปิดตรวจสอบ TLS ใน Go เป็นการตรวจแบบจำกัด ไม่ใช่การตรวจสอบความปลอดภัยอย่างครอบคลุม และไม่มีการสร้างคะแนนคุณภาพหรือผลประเมินด้วย AI",
+  "Scans public GitHub source using 14 focused rules for Python, JavaScript, TypeScript and Go. Coverage includes dynamic code execution, embedded credentials, command execution, SQL construction, sensitive logging, TLS verification and selected error handling. This is not a comprehensive security audit. No quality score or AI assessment is generated.": "สแกนซอร์สโค้ด GitHub สาธารณะด้วยกฎเฉพาะทาง 14 ข้อสำหรับ Python, JavaScript, TypeScript และ Go ครอบคลุมการรันโค้ดแบบไดนามิก ข้อมูลรับรองที่ฝังไว้ในโค้ด การรันคำสั่ง การสร้าง SQL การบันทึกข้อมูลสำคัญ การตรวจสอบ TLS และการจัดการข้อผิดพลาดบางประเภท ทั้งนี้ไม่ใช่การตรวจสอบความปลอดภัยอย่างครอบคลุม และไม่มีการสร้างคะแนนคุณภาพหรือผลประเมินด้วย AI",
   "Only repository owners and editors can start or cancel scans.": "เฉพาะเจ้าของและผู้แก้ไขคลังโค้ดเท่านั้นที่เริ่มหรือยกเลิกการสแกนได้",
   "Loading scan history and results…": "กำลังโหลดประวัติและผลการสแกน…",
   "No scans yet": "ยังไม่มีการสแกน",

@@ -25,12 +25,13 @@ on the web dashboard. No production/shared database was migrated or worker deplo
 - Archives are bounded to 20 MiB compressed, 20 MiB extracted supported source, 2,000 entries,
   1,000 supported files and 1 MiB per supported file. Unsafe paths, Windows reserved names,
   duplicate case-insensitive paths, multiple roots and symlinks are rejected.
-- Only `.py`, `.js`, `.ts`, `.go` regular files are extracted. Hidden directories, vendor,
+- Only `.py`, `.js`, `.jsx`, `.ts`, `.tsx`, `.go` regular files are extracted. Hidden directories, vendor,
   node_modules and repository configuration are excluded. No clone hooks, dependency installs,
   build scripts, repository-supplied rules, autofix or source execution are used.
-- Semgrep CE **1.175.0** runs with the embedded **baseline-v1** ruleset: Python/JS/TS dynamic
-  eval and Go disabled TLS verification. These three initial rules are not a comprehensive
-  security audit. Metrics/version checks are disabled; subprocess credentials and user config
+- Semgrep CE **1.175.0** runs new scans with the embedded **baseline-v2** ruleset: 14 focused
+  security, coding-standard and code-quality rules across Python/JS/TS/Go. Embedded `baseline-v1`
+  remains executable for historical or already-queued jobs. This remains limited coverage, not a
+  comprehensive security audit. Metrics/version checks are disabled; subprocess credentials and user config
   are not inherited. Config/cache/log output uses a fresh temporary directory.
 - Results include rule, severity, file, lines, message and a deterministic location-based
   fingerprint. Source snippets are not persisted. More than 1,000 findings, parser errors,
@@ -39,8 +40,10 @@ on the web dashboard. No production/shared database was migrated or worker deplo
 
 ## Opt-in configuration
 
-1. Review `20260828102015_durable_scan_jobs.sql` after the repository membership migration.
-   Test it on a disposable full Supabase stack and run advisors before promoting it.
+1. Review `20260828102015_durable_scan_jobs.sql` after the repository membership migration, then
+   apply `20260912144015_add_baseline_v2_ruleset.sql` to permit historical `baseline-v1` jobs and
+   make `baseline-v2` the default for new scans. Test migrations on a disposable full Supabase stack
+   and run advisors before promoting them.
 2. Provision a dedicated least-privileged worker login that may `SET ROLE auditorx_scan_worker`.
    The migration creates a NOLOGIN/NOBYPASSRLS role with explicit table grants and policies;
    it does not create credentials or grant this role to the API login or client roles.
@@ -191,8 +194,8 @@ terminal states, history races, duplicate actions, conflicts, read-only retries,
 unmount cleanup, filter logic and escaped finding text. These checks do not replace a signed-in
 browser end-to-end test against a disposable full Supabase/API/worker environment.
 
-Next: issue lifecycle and repeat-scan matching, define persisted quality scoring, extend
-rules/coverage, add production isolation and quotas, and verify with full Postgres concurrency.
+Next: issue lifecycle and repeat-scan matching, define persisted quality scoring, add framework-specific
+taint rules (including path traversal), add production isolation and quotas, and verify with full Postgres concurrency.
 
 References used: [Postgres row locking](https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE),
 [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security),

@@ -11,9 +11,10 @@ type queueStub struct {
 	claimErr, finishErr error
 	finished            bool
 	code                string
+	job                 Job
 }
 
-func (q *queueStub) Claim(context.Context) (Job, error) { return Job{}, q.claimErr }
+func (q *queueStub) Claim(context.Context) (Job, error) { return q.job, q.claimErr }
 func (q *queueStub) Finish(_ context.Context, _ Job, _ Result, code string) error {
 	q.finished = true
 	q.code = code
@@ -29,13 +30,27 @@ func (s sourceStub) Fetch(context.Context, Job, string) (string, error) {
 type analyzerStub struct {
 	err    error
 	cancel context.CancelFunc
+	seen   *string
 }
 
-func (a analyzerStub) Analyze(context.Context, string) (Result, error) {
+func (a analyzerStub) Analyze(_ context.Context, _, rulesVersion string) (Result, error) {
+	if a.seen != nil {
+		*a.seen = rulesVersion
+	}
 	if a.cancel != nil {
 		a.cancel()
 	}
 	return Result{}, a.err
+}
+
+func TestWorkerUsesPersistedRulesVersion(t *testing.T) {
+	q := &queueStub{job: Job{RulesVersion: "baseline-v1"}}
+	seen := ""
+	worker := Worker{Queue: q, Source: sourceStub{}, Analyzer: analyzerStub{seen: &seen}}
+	worked, err := worker.RunOne(context.Background())
+	if err != nil || !worked || seen != "baseline-v1" {
+		t.Fatalf("worker used rules %q: worked=%v err=%v", seen, worked, err)
+	}
 }
 
 func TestWorkerOutcomes(t *testing.T) {

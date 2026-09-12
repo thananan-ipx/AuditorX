@@ -81,7 +81,7 @@
 
 ### Inputs
 - Branch — implemented, but not user-editable at scan time: the scan uses the repository's already-registered branch
-- Rule profile — **Not yet built.** There is no rule-profile selection; every scan runs the single fixed `baseline-v1` ruleset (see `docs/08-quality/semgrep-rules.md`)
+- Rule profile — **Not yet built.** There is no user-selectable profile; new scans use fixed `baseline-v2`, while old `baseline-v1` jobs remain supported (see `docs/08-quality/semgrep-rules.md`)
 
 ### Actions
 - Start Scan — implemented, gated to `access_level` of owner or editor (read-only users see "Only repository owners and editors can start or cancel scans.")

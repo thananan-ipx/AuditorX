@@ -23,6 +23,13 @@ test('members can read status but not other users or lease tokens', async () => 
   assert.equal((await asUser(db, bob, tx => tx.query('SELECT id FROM public.scan_jobs'))).rows.length, 0);
   await assert.rejects(asUser(db, alice, tx => tx.query('SELECT lease_token FROM public.scan_jobs')));
 });
+test('new scans use baseline-v2 while historical baseline-v1 remains valid', async () => {
+  assert.equal((await db.query('SELECT rules_version FROM public.scan_jobs WHERE id=$1', [scan])).rows[0].rules_version, 'baseline-v2');
+  await db.query("UPDATE public.scan_jobs SET rules_version='baseline-v1' WHERE id=$1", [scan]);
+  assert.equal((await db.query('SELECT rules_version FROM public.scan_jobs WHERE id=$1', [scan])).rows[0].rules_version, 'baseline-v1');
+  await assert.rejects(db.query("UPDATE public.scan_jobs SET rules_version='unknown' WHERE id=$1", [scan]));
+  await db.query("UPDATE public.scan_jobs SET rules_version='baseline-v2' WHERE id=$1", [scan]);
+});
 test('clients cannot forge scan status, actor, branch, rules or result rows', async () => {
   await assert.rejects(asUser(db, alice, tx => tx.query(`INSERT INTO public.scan_jobs(repository_id,requested_by,branch,status) VALUES ($1,$2,'main','completed')`, [repo, alice])));
   await assert.rejects(asUser(db, alice, tx => tx.query(`INSERT INTO public.scan_jobs(repository_id,requested_by,branch) VALUES ($1,$2,'main')`, [repo, bob])));

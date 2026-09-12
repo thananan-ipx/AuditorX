@@ -16,11 +16,45 @@ import (
 	"time"
 )
 
+const currentRulesVersion = "baseline-v2"
+
 //go:embed rules/baseline-v1.yaml
-var baselineRules []byte
+var baselineV1Rules []byte
+
+//go:embed rules/baseline-v2.yaml
+var baselineV2Rules []byte
+
+var rulesets = map[string][]byte{
+	"baseline-v1": baselineV1Rules,
+	"baseline-v2": baselineV2Rules,
+}
+
+var allowedRules = map[string]map[string]bool{
+	"baseline-v1": {
+		"auditorx.python.dynamic-eval":          true,
+		"auditorx.javascript.dynamic-eval":      true,
+		"auditorx.go.tls-verification-disabled": true,
+	},
+	"baseline-v2": {
+		"auditorx.python.security.dynamic-eval":                   true,
+		"auditorx.javascript.security.dynamic-eval":               true,
+		"auditorx.go.security.tls-verification-disabled":          true,
+		"auditorx.python.security.hardcoded-secret":               true,
+		"auditorx.javascript.security.hardcoded-secret":           true,
+		"auditorx.go.security.hardcoded-secret":                   true,
+		"auditorx.python.security.shell-command-execution":        true,
+		"auditorx.javascript.security.shell-command-execution":    true,
+		"auditorx.python.security.sql-string-construction":        true,
+		"auditorx.javascript.security.sql-template-interpolation": true,
+		"auditorx.python.coding-standard.sensitive-logging":       true,
+		"auditorx.javascript.coding-standard.sensitive-logging":   true,
+		"auditorx.go.coding-standard.sensitive-logging":           true,
+		"auditorx.go.code-quality.unhandled-json-error":           true,
+	},
+}
 
 type Analyzer interface {
-	Analyze(context.Context, string) (Result, error)
+	Analyze(context.Context, string, string) (Result, error)
 }
 type Semgrep struct{ Executable string }
 type boundedOutput struct {
@@ -35,7 +69,11 @@ func (b *boundedOutput) Write(p []byte) (int, error) {
 	return b.Buffer.Write(p)
 }
 
-func (s Semgrep) Analyze(ctx context.Context, source string) (Result, error) {
+func (s Semgrep) Analyze(ctx context.Context, source, rulesVersion string) (Result, error) {
+	rules, ok := rulesets[rulesVersion]
+	if !ok {
+		return Result{}, errors.New("unsupported rules version")
+	}
 	executable, err := exec.LookPath(s.Executable)
 	if err != nil {
 		return Result{}, err
@@ -49,8 +87,8 @@ func (s Semgrep) Analyze(ctx context.Context, source string) (Result, error) {
 		return Result{}, err
 	}
 	defer os.RemoveAll(scratch)
-	configPath := filepath.Join(scratch, "baseline-v1.yaml")
-	if err = os.WriteFile(configPath, baselineRules, 0600); err != nil {
+	configPath := filepath.Join(scratch, rulesVersion+".yaml")
+	if err = os.WriteFile(configPath, rules, 0600); err != nil {
 		return Result{}, err
 	}
 	cmd := exec.CommandContext(ctx, executable, "scan", "--config", configPath, "--json", "--quiet", "--strict", "--oss-only", "--metrics=off", "--disable-version-check", "--no-git-ignore", "--no-rewrite-rule-ids", "--jobs=1", "--timeout=10", "--max-memory=512", "--max-target-bytes=1048576", ".")
@@ -77,14 +115,18 @@ func (s Semgrep) Analyze(ctx context.Context, source string) (Result, error) {
 		if !errors.As(err, &exitError) || exitError.ExitCode() != 1 || ctx.Err() != nil {
 			return Result{}, fmt.Errorf("semgrep process failed: %w", err)
 		}
-		if _, parseErr := parseFindings(output.Bytes()); parseErr != nil {
+		if _, parseErr := parseFindings(output.Bytes(), rulesVersion); parseErr != nil {
 			return Result{}, fmt.Errorf("semgrep failed: %w; diagnostics: %s", err, stderr.String())
 		}
 	}
-	return parseFindings(output.Bytes())
+	return parseFindings(output.Bytes(), rulesVersion)
 }
 
-func parseFindings(data []byte) (Result, error) {
+func parseFindings(data []byte, rulesVersion string) (Result, error) {
+	knownRules, ok := allowedRules[rulesVersion]
+	if !ok {
+		return Result{}, errors.New("unsupported rules version")
+	}
 	var raw struct {
 		Version string            `json:"version"`
 		Errors  []json.RawMessage `json:"errors"`
@@ -117,16 +159,14 @@ func parseFindings(data []byte) (Result, error) {
 			return Result{}, errors.New("invalid finding")
 		}
 		// Only this reviewed ruleset may publish findings; never execute repository rules.
-		switch item.Rule {
-		case "auditorx.python.dynamic-eval", "auditorx.javascript.dynamic-eval", "auditorx.go.tls-verification-disabled":
-		default:
+		if !knownRules[item.Rule] {
 			return Result{}, errors.New("unknown rule")
 		}
 		severity := map[string]string{"ERROR": "High", "WARNING": "Medium", "INFO": "Low"}[item.Extra.Severity]
 		if severity == "" {
 			return Result{}, errors.New("unknown severity")
 		}
-		hash := sha256.Sum256([]byte(fmt.Sprintf("baseline-v1\x00%s\x00%s\x00%d\x00%d", item.Rule, file, item.Start.Line, item.End.Line)))
+		hash := sha256.Sum256([]byte(fmt.Sprintf("%s\x00%s\x00%s\x00%d\x00%d", rulesVersion, item.Rule, file, item.Start.Line, item.End.Line)))
 		fingerprint := hex.EncodeToString(hash[:])
 		if seen[fingerprint] {
 			continue

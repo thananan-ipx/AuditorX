@@ -94,7 +94,7 @@ Administrator ต้องสามารถกำหนดหรือเปล
 ### FR-SCAN-007 Supported Languages
 ระบบต้นแบบต้องรองรับ JavaScript, TypeScript, Python และ Go ตาม Rule Set ที่กำหนด
 
-**Status: Partially implemented** — ปัจจุบันมี Semgrep rule เพียง 3 rule ที่ active ภายใต้ ruleset "baseline-v1" ครอบคลุม Python/JS/TS dynamic eval และ Go disabled TLS verification เท่านั้น ยังไม่ใช่ rule set ที่กำหนดค่าได้ (configurable)
+**Status: Partially implemented** — scan ใหม่ใช้ Semgrep 14 rules ภายใต้ `baseline-v2` ครอบคลุม Python/JS/TS/Go และ worker ยังรองรับ `baseline-v1` สำหรับงานเก่า แต่ยังไม่ใช่ rule set ที่ผู้ใช้เลือกหรือกำหนดค่าได้
 
 ### FR-SCAN-008 Scan Error Handling
 ระบบต้องบันทึกสาเหตุและแจ้งเมื่อ Scan ไม่สำเร็จ

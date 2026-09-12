@@ -42,7 +42,7 @@ These four tables exist today, all with Row Level Security enabled and forced:
 
 - **`repositories`**: `id`, `name`, `owner_name`, `repository_url` (must equal `https://github.com/{owner_name}/{name}`, lowercase), `default_branch` (default `main`), `status` (`Active`/`Archived`), `created_by` (FK `auth.users`), `created_at`. One row per `(created_by, repository_url)`. No `provider`, `external_repository_id`, `primary_language`, `criticality`, or `updated_at` columns.
 - **`repository_members`**: composite PK `(repository_id, user_id)`, plus `repository_owner_id` (a composite FK back to `repositories(id, created_by)` used to avoid recursive RLS), `access_level` (`owner`/`editor`/`viewer`), `created_at`. No surrogate `id` column, no `updated_at`.
-- **`scan_jobs`** (the implemented `Scan`): `id`, `repository_id`, `requested_by` (FK `auth.users`), `branch`, `rules_version` (currently fixed to `'baseline-v1'`), `status` (`queued`/`running`/`completed`/`failed`/`cancelled`), `attempts` (0–3), `lease_token`, `lease_expires_at`, `commit_sha` (40-char hex), `scanner_version`, `error_code`, `created_at`, `started_at`, `finished_at`. Only one `queued`/`running` job per repository is allowed (partial unique index). No `quality_score`, `score_version`, `score_calculated_at`, `severity_mapping_version`, or `error_message` columns.
+- **`scan_jobs`** (the implemented `Scan`): `id`, `repository_id`, `requested_by` (FK `auth.users`), `branch`, `rules_version` (`baseline-v2` default; `baseline-v1` retained for history), `status` (`queued`/`running`/`completed`/`failed`/`cancelled`), `attempts` (0–3), `lease_token`, `lease_expires_at`, `commit_sha` (40-char hex), `scanner_version`, `error_code`, `created_at`, `started_at`, `finished_at`. Only one `queued`/`running` job per repository is allowed (partial unique index). No `quality_score`, `score_version`, `score_calculated_at`, `severity_mapping_version`, or `error_message` columns.
 - **`scan_findings`** (the implemented, immutable per-scan finding — not a persistent `Issue`): composite PK `(scan_id, fingerprint)`, `repository_id`, `fingerprint` (64-char hash), `rule_id`, `severity` (`High`/`Medium`/`Low` only), `file_path`, `start_line`, `end_line`, `message`. No `title`, `category`, `start_column`/`end_column`, `code_snippet`, `status`, `metadata`, `created_at`/`updated_at` — a finding has no lifecycle or notes; it is simply what a completed scan found.
 
 ---
@@ -150,7 +150,7 @@ Key fields (planned superset; see §2.1 for the real column list):
 - repository_id
 - branch
 - commit_sha
-- rule_profile *(implemented as `rules_version`, fixed to `baseline-v1`)*
+- rule_profile *(implemented as `rules_version`; new default `baseline-v2`, historical `baseline-v1` supported)*
 - severity_mapping_version *(planned)*
 - status
 - quality_score *(planned)*

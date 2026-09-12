@@ -75,7 +75,7 @@ export function ScanWorkspace({ repository, state, canWrite, onStart, onCancel, 
         </Button>
       </div>
     </section>
-    <p className="max-w-3xl text-sm leading-6 text-muted-foreground">{t("Scans public GitHub source using three baseline rules for dynamic eval in Python/JavaScript/TypeScript and disabled TLS verification in Go. This is limited rule coverage, not a comprehensive security audit. No quality score or AI assessment is generated.")}</p>
+    <p className="max-w-3xl text-sm leading-6 text-muted-foreground">{t("Scans public GitHub source using 14 focused rules for Python, JavaScript, TypeScript and Go. Coverage includes dynamic code execution, embedded credentials, command execution, SQL construction, sensitive logging, TLS verification and selected error handling. This is not a comprehensive security audit. No quality score or AI assessment is generated.")}</p>
     {!canWrite && <p className="text-sm text-muted-foreground">{t("Only repository owners and editors can start or cancel scans.")}</p>}
     {state.notice && <p role="status" className="rounded-xl border bg-white p-4 text-sm">{state.notice}</p>}
     {state.phase === "error" ? <WorkspaceError error={state.error} retry={onRefresh} returnTo={dashboardHref(repository.id)} />

@@ -42,7 +42,7 @@ func (w Worker) RunOne(ctx context.Context) (bool, error) {
 		} else if !shaPattern.MatchString(sha) {
 			code = "INVALID_COMMIT"
 		} else {
-			result, err = w.Analyzer.Analyze(scanCtx, directory)
+			result, err = w.Analyzer.Analyze(scanCtx, directory, job.RulesVersion)
 			result.CommitSHA = sha
 			if err != nil {
 				code = "SCANNER_FAILED"

@@ -148,7 +148,7 @@ func extractSource(data []byte, destination string) error {
 			}
 		}
 		extension := strings.ToLower(path.Ext(relative))
-		if skip || (extension != ".py" && extension != ".js" && extension != ".ts" && extension != ".go") {
+		if skip || (extension != ".py" && extension != ".js" && extension != ".jsx" && extension != ".ts" && extension != ".tsx" && extension != ".go") {
 			continue
 		}
 		if entry.UncompressedSize64 > maxFileBytes {

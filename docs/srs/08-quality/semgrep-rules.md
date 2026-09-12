@@ -11,15 +11,26 @@
 
 กำหนดแนวทางเลือก จัดกลุ่ม และบริหาร Semgrep Rules สำหรับ AuditorX
 
-**Implementation status:** Today AuditorX runs exactly **3 active rules** in one fixed, embedded ruleset called `baseline-v1` (`backend/internal/modules/scan/rules/baseline-v1.yaml`, embedded into the scan worker via `go:embed`). There is no rule catalog, no rule profiles, and no per-scan rule selection yet — every scan uses `baseline-v1` and only `baseline-v1`. The 3 rules:
+**Implementation status:** New scans use the fixed, embedded **`baseline-v2`** ruleset with **14 active rules**. Historical or already-queued `baseline-v1` scans remain supported and are analyzed with their recorded ruleset; ruleset changes never reinterpret a historical scan. Both YAML files are embedded into the worker via `go:embed`. There is still no user-selectable profile or per-scan rule selection — the API accepts only the `recommended` profile, which resolves to the database default (`baseline-v2` for new scans).
 
 | Rule ID | Language(s) | Semgrep severity | AuditorX severity | Check |
 |---|---|---|---|---|
-| `auditorx.python.dynamic-eval` | Python | ERROR | High | dynamic `eval(...)` call |
-| `auditorx.javascript.dynamic-eval` | JavaScript, TypeScript | ERROR | High | dynamic `eval(...)` call |
-| `auditorx.go.tls-verification-disabled` | Go | ERROR | High | `tls.Config{InsecureSkipVerify: true}` |
+| `auditorx.python.security.dynamic-eval` | Python | ERROR | High | dynamic `eval(...)` call |
+| `auditorx.javascript.security.dynamic-eval` | JavaScript, TypeScript | ERROR | High | dynamic `eval(...)` call |
+| `auditorx.go.security.tls-verification-disabled` | Go | ERROR | High | `tls.Config{InsecureSkipVerify: true}` |
+| `auditorx.python.security.hardcoded-secret` | Python | ERROR | High | secret-like variable assigned a literal |
+| `auditorx.javascript.security.hardcoded-secret` | JavaScript, TypeScript | ERROR | High | secret-like variable declared with a literal |
+| `auditorx.go.security.hardcoded-secret` | Go | ERROR | High | secret-like variable assigned a literal |
+| `auditorx.python.security.shell-command-execution` | Python | ERROR | High | `shell=True`, `os.system`, or `os.popen` |
+| `auditorx.javascript.security.shell-command-execution` | JavaScript, TypeScript | ERROR | High | direct `child_process.exec`/`execSync` usage |
+| `auditorx.python.security.sql-string-construction` | Python | ERROR | High | SQL built with f-strings, `%`, or concatenation |
+| `auditorx.javascript.security.sql-template-interpolation` | JavaScript, TypeScript | ERROR | High | interpolated template passed to `query`/`execute` |
+| `auditorx.python.coding-standard.sensitive-logging` | Python | WARNING | Medium | secret-like variable written to a logger or `print` |
+| `auditorx.javascript.coding-standard.sensitive-logging` | JavaScript, TypeScript | WARNING | Medium | secret-like variable written to console/logger |
+| `auditorx.go.coding-standard.sensitive-logging` | Go | WARNING | Medium | secret-like variable written with log/fmt |
+| `auditorx.go.code-quality.unhandled-json-error` | Go | WARNING | Medium | ignored JSON encoder/decoder error |
 
-The scan worker (`backend/internal/modules/scan/scanner.go`) pins Semgrep Community Edition to exactly version `1.175.0` and fails closed (returns no findings) if the installed Semgrep reports a different `version` in its JSON output, if it reports any scanner errors, if it returns more than 1000 results, or if a result references a rule ID outside this list of 3. Everything else in this document below (rule categories, profiles, custom-rule structure, rule repository layout) describes the planned target design for a future, larger rule catalog and is not yet implemented.
+The scan worker (`backend/internal/modules/scan/scanner.go`) pins Semgrep Community Edition to exactly version `1.175.0` and fails closed (returns no findings) if the installed Semgrep reports a different version, scanner errors, more than 1000 results, an unsupported ruleset version, or a rule ID outside the allowlist for that version. The rules have real positive/negative fixture coverage. A general path-traversal rule is intentionally deferred until framework-specific taint sources and sanitizers can be defined without excessive false positives.
 
 ---
 
@@ -59,7 +70,7 @@ For the academic POC, use only rule sources that can be legally and technically 
 
 ## 5. Rule Profile Concept
 
-**Implementation status: Not yet built.** There is no profile concept today; every scan runs the single fixed `baseline-v1` ruleset described in Section 1.
+**Implementation status: Not yet built.** There is no selectable profile concept today; new scans run `baseline-v2`, while recorded `baseline-v1` jobs retain backward-compatible execution.
 
 Instead of selecting individual rules every time, AuditorX should support profiles.
 
@@ -117,7 +128,7 @@ Critical should only be assigned by an explicit AuditorX rule/mapping policy, no
 
 Every Scan must store the mapping version. A future mapping change requires a new version and must not reinterpret historical findings silently.
 
-**Implementation status:** This ERROR→High / WARNING→Medium / INFO→Low mapping is implemented in `parseFindings` (`backend/internal/modules/scan/scanner.go`) and enforced (unrecognized source severities fail the scan). In practice all 3 current `baseline-v1` rules are declared as `severity: ERROR`, so every finding today maps to **High** — Medium and Low are reachable by the mapping code but not currently produced by any active rule. Critical is not assigned anywhere; there is no rule or policy that produces it, matching the guidance above. There is no persisted `severity_mapping_version` field yet — the mapping is fixed in code rather than versioned/stored per scan.
+**Implementation status:** This mapping is implemented in `parseFindings` and enforced (unrecognized source severities fail the scan). `baseline-v2` contains 10 ERROR rules that map to **High** and 4 WARNING rules that map to **Medium**. No active rule produces Low or Critical. There is no persisted `severity_mapping_version` field yet — the mapping is fixed in code rather than versioned/stored per scan.
 
 ---
 

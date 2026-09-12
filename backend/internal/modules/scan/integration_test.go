@@ -31,7 +31,7 @@ func (f fixtureSource) Fetch(_ context.Context, _ Job, destination string) (stri
 
 type fixedAnalyzer struct{}
 
-func (fixedAnalyzer) Analyze(context.Context, string) (Result, error) {
+func (fixedAnalyzer) Analyze(context.Context, string, string) (Result, error) {
 	return Result{ScannerVersion: "1.175.0", Findings: []Finding{{Fingerprint: strings.Repeat("f", 64), RuleID: "auditorx.python.dynamic-eval", Severity: "High", File: "app.py", Line: 3, EndLine: 3, Message: "Avoid dynamic code evaluation"}}}, nil
 }
 
@@ -129,7 +129,7 @@ func TestPostgresIntegration(t *testing.T) {
 	if err != nil || secondClaim.Attempts != 2 || secondClaim.LeaseToken == firstClaim.LeaseToken {
 		t.Fatalf("reclaim: %+v %v", secondClaim, err)
 	}
-	sample, _ := (fixedAnalyzer{}).Analyze(ctx, "")
+	sample, _ := (fixedAnalyzer{}).Analyze(ctx, "", first.RulesVersion)
 	sample.CommitSHA = strings.Repeat("a", 40)
 	if err = store.Finish(ctx, firstClaim, sample, ""); !errors.Is(err, ErrLeaseLost) {
 		t.Fatalf("stale publication accepted: %v", err)

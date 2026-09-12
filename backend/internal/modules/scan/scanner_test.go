@@ -36,12 +36,17 @@ func archive(t *testing.T, files map[string]string, symlink bool) []byte {
 }
 func TestExtractSource(t *testing.T) {
 	root := t.TempDir()
-	data := archive(t, map[string]string{"repo/app.py": "eval('x')", "repo/.semgrepignore": "*", "repo/node_modules/a.js": "eval(x)"}, false)
+	data := archive(t, map[string]string{"repo/app.py": "eval('x')", "repo/view.jsx": "eval(x)", "repo/page.tsx": "eval(x)", "repo/.semgrepignore": "*", "repo/node_modules/a.js": "eval(x)"}, false)
 	if err := extractSource(data, root); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(root, "app.py")); err != nil {
 		t.Fatal(err)
+	}
+	for _, name := range []string{"view.jsx", "page.tsx"} {
+		if _, err := os.Stat(filepath.Join(root, name)); err != nil {
+			t.Fatal(err)
+		}
 	}
 	if _, err := os.Stat(filepath.Join(root, ".semgrepignore")); !os.IsNotExist(err) {
 		t.Fatal("repository config copied")
@@ -81,18 +86,30 @@ func TestSemgrepParser(t *testing.T) {
 		data, _ := json.Marshal(map[string]any{"version": version, "results": items, "errors": errs})
 		return data
 	}
-	result, err := parseFindings(encode("1.175.0", []any{finding, finding}, []any{}))
+	result, err := parseFindings(encode("1.175.0", []any{finding, finding}, []any{}), "baseline-v1")
 	if err != nil || len(result.Findings) != 1 || result.Findings[0].Severity != "High" {
 		t.Fatalf("%+v %v", result, err)
 	}
 	for _, data := range [][]byte{[]byte(`{}`), []byte(`bad json`), encode("old", []any{}, nil), encode("1.175.0", []any{}, []any{"parse failure"})} {
-		if _, err := parseFindings(data); err == nil {
+		if _, err := parseFindings(data, "baseline-v1"); err == nil {
 			t.Fatal("invalid result accepted")
 		}
 	}
 	finding["path"] = "../secret.py"
-	if _, err := parseFindings(encode("1.175.0", []any{finding}, nil)); err == nil {
+	if _, err := parseFindings(encode("1.175.0", []any{finding}, nil), "baseline-v1"); err == nil {
 		t.Fatal("path escape accepted")
+	}
+	if _, err := parseFindings(encode("1.175.0", []any{}, nil), "unknown"); err == nil {
+		t.Fatal("unknown rules version accepted")
+	}
+	warning := map[string]any{"check_id": "auditorx.go.code-quality.unhandled-json-error", "path": "app.go", "start": map[string]int{"line": 8}, "end": map[string]int{"line": 8}, "extra": map[string]string{"message": "Handle the error", "severity": "WARNING"}}
+	result, err = parseFindings(encode("1.175.0", []any{warning}, nil), "baseline-v2")
+	if err != nil || len(result.Findings) != 1 || result.Findings[0].Severity != "Medium" {
+		t.Fatalf("warning mapping: %+v %v", result, err)
+	}
+	warning["check_id"] = "auditorx.unreviewed-rule"
+	if _, err := parseFindings(encode("1.175.0", []any{warning}, nil), "baseline-v2"); err == nil {
+		t.Fatal("unreviewed baseline-v2 rule accepted")
 	}
 }
 
@@ -101,18 +118,68 @@ func TestSemgrepFixture(t *testing.T) {
 	if executable == "" {
 		t.Skip("set AUDITORX_TEST_SEMGREP to installed Semgrep 1.175.0 executable")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	fixture, err := filepath.Abs("testdata/fixture")
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := (Semgrep{Executable: executable}).Analyze(ctx, fixture)
+	for version, rule := range map[string]string{
+		"baseline-v1": "auditorx.python.dynamic-eval",
+		"baseline-v2": "auditorx.python.security.dynamic-eval",
+	} {
+		result, analyzeErr := (Semgrep{Executable: executable}).Analyze(ctx, fixture, version)
+		if analyzeErr != nil {
+			t.Fatal(analyzeErr)
+		}
+		if len(result.Findings) != 1 || result.Findings[0].RuleID != rule || result.Findings[0].File != "app.py" || result.Findings[0].Line != 3 {
+			t.Fatalf("unexpected %s result: %+v", version, result)
+		}
+		t.Logf("Semgrep %s ran %s and found %s at %s:%d", result.ScannerVersion, version, result.Findings[0].RuleID, result.Findings[0].File, result.Findings[0].Line)
+	}
+}
+
+func TestSemgrepRuleCatalog(t *testing.T) {
+	executable := os.Getenv("AUDITORX_TEST_SEMGREP")
+	if executable == "" {
+		t.Skip("set AUDITORX_TEST_SEMGREP to installed Semgrep 1.175.0 executable")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+	fixture, err := filepath.Abs("testdata/rules")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(result.Findings) != 1 || result.Findings[0].RuleID != "auditorx.python.dynamic-eval" || result.Findings[0].File != "app.py" || result.Findings[0].Line != 3 {
-		t.Fatalf("unexpected real result: %+v", result)
+	result, err := (Semgrep{Executable: executable}).Analyze(ctx, fixture, currentRulesVersion)
+	if err != nil {
+		t.Fatal(err)
 	}
-	t.Logf("Semgrep %s found %s at %s:%d", result.ScannerVersion, result.Findings[0].RuleID, result.Findings[0].File, result.Findings[0].Line)
+	want := map[string]int{
+		"auditorx.python.security.dynamic-eval":                   1,
+		"auditorx.javascript.security.dynamic-eval":               1,
+		"auditorx.go.security.tls-verification-disabled":          1,
+		"auditorx.python.security.hardcoded-secret":               1,
+		"auditorx.javascript.security.hardcoded-secret":           1,
+		"auditorx.go.security.hardcoded-secret":                   1,
+		"auditorx.python.security.shell-command-execution":        1,
+		"auditorx.javascript.security.shell-command-execution":    1,
+		"auditorx.python.security.sql-string-construction":        1,
+		"auditorx.javascript.security.sql-template-interpolation": 1,
+		"auditorx.python.coding-standard.sensitive-logging":       1,
+		"auditorx.javascript.coding-standard.sensitive-logging":   1,
+		"auditorx.go.coding-standard.sensitive-logging":           1,
+		"auditorx.go.code-quality.unhandled-json-error":           1,
+	}
+	got := map[string]int{}
+	for _, finding := range result.Findings {
+		got[finding.RuleID]++
+	}
+	if len(got) != len(want) {
+		t.Fatalf("unexpected rule set: got=%v want=%v", got, want)
+	}
+	for rule, count := range want {
+		if got[rule] != count {
+			t.Errorf("%s: got %d findings, want %d", rule, got[rule], count)
+		}
+	}
 }

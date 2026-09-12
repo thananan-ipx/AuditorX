@@ -274,9 +274,11 @@ before enabling it. The `/repositories` page now supports creation and selection
 Prototype mode is visibly labeled and remains read-only for repository registration.
 Restart the API with this revision so the frontend can read the authenticated `/api/v1/capabilities` endpoint.
 
-A first real Semgrep backend pipeline is available behind the separate `SCAN_QUEUE_ENABLED=true`
+A real Semgrep backend pipeline is available behind the separate `SCAN_QUEUE_ENABLED=true`
 opt-in. It includes a durable queue, an independently configured worker, cancellation and scan-specific
 result APIs. The dashboard now connects start/cancel controls, active status polling, the latest 20 scans
-and actual findings with severity/search filters. It does not show invented quality scores or AI results.
+and actual findings with severity/search filters. New scans use 14 reviewed `baseline-v2` rules across
+Python, JavaScript/TypeScript and Go; historical `baseline-v1` jobs remain executable. It does not show
+invented quality scores or AI results.
 The real fixture-to-database-to-API flow is tested; full-stack signed-in browser validation and production
 isolation remain pending. See [scan pipeline setup and limits](docs/scan-pipeline.md) before enabling it.

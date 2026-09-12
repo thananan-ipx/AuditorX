@@ -94,7 +94,7 @@ Real table: `public.scan_jobs`. Real column names differ from the planned ones b
 | repository_id | UUID | FK, Required | Repository | Implemented |
 | branch | VARCHAR | Required, 1–255 chars | Scanned branch | Implemented |
 | commit_sha | VARCHAR | Nullable, 40-char hex | Scanned commit | Implemented |
-| rule_profile | VARCHAR | Required | Rule profile/version | Implemented as `rules_version`, currently fixed to `'baseline-v1'` |
+| rule_profile | VARCHAR | Required | Rule profile/version | Implemented as `rules_version`; new scans default to `baseline-v2`, and `baseline-v1` remains valid for history |
 | severity_mapping_version | VARCHAR | Required | Version of Semgrep-to-AuditorX severity mapping | Planned |
 | status | VARCHAR | Required | `queued`/`running`/`completed`/`failed`/`cancelled` | Implemented (values differ from planned `Pending/Running/...`) |
 | quality_score | DECIMAL | Nullable | Final quality score | Planned |

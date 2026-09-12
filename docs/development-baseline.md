@@ -93,7 +93,7 @@ to decide when a slice is ready.
 Progress: slices 1–2 now include migration/RLS, create/list/detail, ownership isolation tests,
 branch validation, and frontend creation/selection. Update/delete and full Supabase staging
 verification remain pending. Slice 3 now includes durable queue/leases, worker, public GitHub source
-adapter, three pinned Semgrep rules and scan result APIs. The real local fixture flow passed end-to-end
+adapter, 14 pinned `baseline-v2` Semgrep rules (plus historical `baseline-v1` execution) and scan result APIs. The real local fixture flow passed end-to-end
 through worker/database/HTTP; production isolation, live GitHub retrieval and full Postgres concurrency
 tests remain pending. Web scan controls, polling, history and filtered findings are now implemented.
 The next product slice is issue lifecycle/repeat-scan matching and deterministic persisted scoring.
