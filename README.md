@@ -166,6 +166,19 @@ Version Control
 
 * GitHub
 
+## Local database (Docker)
+
+The local Supabase/PostgreSQL database is reproducible from the files committed under
+`supabase/`. On a new computer, install Docker Desktop, Node.js 24, and PowerShell 7.4+, then run:
+
+```powershell
+pwsh ./scripts/database-local.ps1 start
+```
+
+This downloads the pinned local tooling when needed and creates the database from the
+versioned migrations and safe seed file. See [Local database in Docker](docs/local-database.md)
+for reset, stop, data-backup, and secret-handling details.
+
 Future Prototype
 
 * Model Context Protocol (MCP)

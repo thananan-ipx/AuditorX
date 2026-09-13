@@ -1,0 +1,6 @@
+-- AuditorX local development seed.
+--
+-- The schema is created by the versioned files in supabase/migrations. This file is
+-- intentionally data-free so a fresh local stack is reproducible without committing
+-- user accounts, password hashes, repository URLs, scan results, or other machine-local
+-- data. Add only non-sensitive, deterministic development fixtures here.
