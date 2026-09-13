@@ -22,6 +22,10 @@ on the web dashboard. No production/shared database was migrated or worker deplo
   that SHA's ZIP from codeload.github.com. Requests use fixed GitHub hosts, no credentials,
   no configured HTTP proxy, and reject redirects. Private repositories and renamed-repo
   redirects are intentionally unsupported in this slice.
+- Owners/editors may instead upload a local project folder or ZIP through the dashboard.
+  Uploads use the same queue, rules and extraction limits. The archive is stored in a dedicated
+  RLS/forced-RLS table that never grants clients access to the archive bytes; the worker verifies
+  its SHA-256 digest and deletes it atomically when the job completes, fails or is cancelled.
 - Archives are bounded to 20 MiB compressed, 20 MiB extracted supported source, 2,000 entries,
   1,000 supported files and 1 MiB per supported file. Unsafe paths, Windows reserved names,
   duplicate case-insensitive paths, multiple roots and symlinks are rejected.
@@ -34,15 +38,17 @@ on the web dashboard. No production/shared database was migrated or worker deplo
   comprehensive security audit. Metrics/version checks are disabled; subprocess credentials and user config
   are not inherited. Config/cache/log output uses a fresh temporary directory.
 - Results include rule, severity, file, lines, message and a deterministic location-based
-  fingerprint. Source snippets are not persisted. More than 1,000 findings, parser errors,
-  unknown rules or engine versions fail closed. The fingerprint is not yet a cross-scan
+  fingerprint. Source snippets are not persisted. More than 1,000 findings, fatal scanner/parser
+  errors, unknown diagnostics, unknown rules or engine versions fail closed. Semgrep's structured
+  warning-level `PartialParsing` diagnostic is tolerated so valid portions of JSX/TSX files can
+  still be scanned; affected fragments are skipped by Semgrep. The fingerprint is not yet a cross-scan
   issue identity when source lines move.
 
 ## Opt-in configuration
 
 1. Review `20260828102015_durable_scan_jobs.sql` after the repository membership migration, then
-   apply `20260912144015_add_baseline_v2_ruleset.sql` to permit historical `baseline-v1` jobs and
-   make `baseline-v2` the default for new scans. Test migrations on a disposable full Supabase stack
+   apply `20260912144015_add_baseline_v2_ruleset.sql` and
+   `20260912152408_add_uploaded_scan_sources.sql`. Test migrations on a disposable full Supabase stack
    and run advisors before promoting them.
 2. Provision a dedicated least-privileged worker login that may `SET ROLE auditorx_scan_worker`.
    The migration creates a NOLOGIN/NOBYPASSRLS role with explicit table grants and policies;
@@ -130,6 +136,7 @@ All routes require the existing verified session and current repository membersh
 | Request | Result |
 | --- | --- |
 | `POST /api/v1/repositories/{repo}/scans` | `202`, persisted job and Location; body `{ "branch": "main", "rule_profile": "recommended" }` or `{}` for registered branch |
+| `POST /api/v1/repositories/{repo}/scans/upload` | `202`, multipart local folder (`file:{relative-path}` parts) or one `archive` ZIP; 20 MiB request/source limits |
 | `GET /api/v1/repositories/{repo}/scans` | Latest 20 jobs, newest first; no full-history pagination yet |
 | `GET /api/v1/repositories/{repo}/scans/{scan}` | Poll status: queued/running/completed/failed/cancelled |
 | `GET /api/v1/repositories/{repo}/scans/{scan}/findings` | Completed scan findings; otherwise `409 SCAN_NOT_COMPLETED` |
@@ -144,11 +151,12 @@ mode; the web dashboard now uses scan-specific endpoints for real results when t
 ## Web workflow
 
 After the opt-in setup above, sign in and choose a repository at `/repositories`, or open
-`/dashboard?repository={id}`. Owners/editors can start a scan of the registered branch and
+`/dashboard?repository={id}`. Owners/editors can start a scan of the registered branch, upload
+a local project folder/ZIP, and
 cancel a selected queued/running scan. Viewers can inspect history and findings only.
 The server remains authoritative for every action; capability and role hints are not authorization.
 
-- History shows the latest 20 scans. Select an entry to inspect its status, branch, commit,
+- History shows the latest 20 scans. Select an entry to inspect its status, source, commit/digest,
   rule/scanner versions, timestamps and completed findings. No full-history pagination yet.
 - Status refreshes every 3 seconds **after** the prior read finishes, while any listed/selected
   job is active. Viewing an older completed scan does not stop tracking a newer active job.

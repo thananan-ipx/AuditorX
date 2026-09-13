@@ -12,15 +12,29 @@ before(async () => {
 after(async () => { await db?.close(); });
 
 test('scan tables enforce RLS and deny anonymous access', async () => {
-  const { rows } = await db.query(`SELECT relrowsecurity,relforcerowsecurity FROM pg_class WHERE oid IN ('public.scan_jobs'::regclass,'public.scan_findings'::regclass)`);
-  assert.equal(rows.length, 2);
+  const { rows } = await db.query(`SELECT relrowsecurity,relforcerowsecurity FROM pg_class WHERE oid IN ('public.scan_jobs'::regclass,'public.scan_findings'::regclass,'public.scan_source_archives'::regclass)`);
+  assert.equal(rows.length, 3);
   assert.ok(rows.every(row => row.relrowsecurity && row.relforcerowsecurity));
   await assert.rejects(db.transaction(async tx => { await tx.exec('SET LOCAL ROLE anon'); await tx.query('SELECT id FROM public.scan_jobs'); }));
 });
+test('owners can queue uploads while source archives remain write-only and access-scoped', async () => {
+  const uploadRepo = await createRepository(db, alice, 'upload-policy');
+  const digest = 'a'.repeat(64);
+  const upload = await asUser(db, alice, async tx => {
+    const job = (await tx.query(`INSERT INTO public.scan_jobs(repository_id,requested_by,branch,source_kind,source_name,source_digest)
+      VALUES ($1,$2,'main','upload','project.zip',$3) RETURNING id,source_kind,source_name,source_digest`, [uploadRepo,alice,digest])).rows[0];
+    await tx.query(`INSERT INTO public.scan_source_archives(scan_id,repository_id,requested_by,archive) VALUES ($1,$2,$3,decode('504b0304','hex'))`, [job.id,uploadRepo,alice]);
+    return job;
+  });
+  assert.equal(upload.source_kind, 'upload');
+  assert.equal(upload.source_name, 'project.zip');
+  await assert.rejects(asUser(db, alice, tx => tx.query('SELECT archive FROM public.scan_source_archives WHERE scan_id=$1', [upload.id])));
+  await assert.rejects(asUser(db, bob, tx => tx.query(`INSERT INTO public.scan_source_archives(scan_id,repository_id,requested_by,archive) VALUES ($1,$2,$3,decode('504b0304','hex'))`, [upload.id,uploadRepo,bob])));
+});
 test('members can read status but not other users or lease tokens', async () => {
-  assert.equal((await asUser(db, alice, tx => tx.query('SELECT id FROM public.scan_jobs'))).rows.length, 1);
-  assert.equal((await asUser(db, viewer, tx => tx.query('SELECT id FROM public.scan_jobs'))).rows.length, 1);
-  assert.equal((await asUser(db, bob, tx => tx.query('SELECT id FROM public.scan_jobs'))).rows.length, 0);
+  assert.equal((await asUser(db, alice, tx => tx.query('SELECT id FROM public.scan_jobs WHERE repository_id=$1', [repo]))).rows.length, 1);
+  assert.equal((await asUser(db, viewer, tx => tx.query('SELECT id FROM public.scan_jobs WHERE repository_id=$1', [repo]))).rows.length, 1);
+  assert.equal((await asUser(db, bob, tx => tx.query('SELECT id FROM public.scan_jobs WHERE repository_id=$1', [repo]))).rows.length, 0);
   await assert.rejects(asUser(db, alice, tx => tx.query('SELECT lease_token FROM public.scan_jobs')));
 });
 test('new scans use baseline-v2 while historical baseline-v1 remains valid', async () => {

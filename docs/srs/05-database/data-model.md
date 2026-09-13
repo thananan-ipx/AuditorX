@@ -4,7 +4,7 @@
 > **Document:** Logical Data Model  
 > **Status:** Draft
 
-**Implementation status (as of 2026-09-12):** This document mixes the schema that is actually built with a larger target design. Only `Repository`, `RepositoryMember` and a durable `Scan`/`ScanFinding` pair (backed by the `scan_jobs` and `scan_findings` tables) exist in the codebase today (`supabase/migrations/20260828073925_repository_membership.sql`, `supabase/migrations/20260828102015_durable_scan_jobs.sql`). See §2.1 for the current schema as-built. `User`/`Role` are not a local table — identity is Supabase Auth's `auth.users`, referenced only by foreign key. Everything else in §2 (`Issue` as a persistent, stateful entity, `IssueStatusHistory`, `IssueNote`, `PriorityLabel`, `PriorityPrediction`, `PriorityDataset`, `PriorityModel`, `EvaluationRun`, `AIAnalysis`, `AIRepositorySummary`, `Report`, `AuditLog`) is planned/target design with no corresponding table yet. Sections below are annotated **[Implemented]** or **[Planned]** accordingly; content is retained as forward-looking scope for the project spec.
+**Implementation status (as of 2026-09-13):** This document mixes the schema that is actually built with a larger target design. `Repository`, `RepositoryMember`, durable `Scan`/`ScanFinding`, and temporary uploaded scan sources are backed by `repositories`, `repository_members`, `scan_jobs`, `scan_findings`, and `scan_source_archives`. See §2.1 for the current schema as-built. `User`/`Role` are not a local table — identity is Supabase Auth's `auth.users`, referenced only by foreign key. Everything else in §2 (`Issue` as a persistent, stateful entity, `IssueStatusHistory`, `IssueNote`, `PriorityLabel`, `PriorityPrediction`, `PriorityDataset`, `PriorityModel`, `EvaluationRun`, `AIAnalysis`, `AIRepositorySummary`, `Report`, `AuditLog`) is planned/target design with no corresponding table yet. Sections below are annotated **[Implemented]** or **[Planned]** accordingly; content is retained as forward-looking scope for the project spec.
 
 ---
 
@@ -38,12 +38,13 @@
 
 ### 2.1 Implemented Schema (current, from `supabase/migrations/*.sql`)
 
-These four tables exist today, all with Row Level Security enabled and forced:
+These five tables exist today, all with Row Level Security enabled and forced:
 
 - **`repositories`**: `id`, `name`, `owner_name`, `repository_url` (must equal `https://github.com/{owner_name}/{name}`, lowercase), `default_branch` (default `main`), `status` (`Active`/`Archived`), `created_by` (FK `auth.users`), `created_at`. One row per `(created_by, repository_url)`. No `provider`, `external_repository_id`, `primary_language`, `criticality`, or `updated_at` columns.
 - **`repository_members`**: composite PK `(repository_id, user_id)`, plus `repository_owner_id` (a composite FK back to `repositories(id, created_by)` used to avoid recursive RLS), `access_level` (`owner`/`editor`/`viewer`), `created_at`. No surrogate `id` column, no `updated_at`.
-- **`scan_jobs`** (the implemented `Scan`): `id`, `repository_id`, `requested_by` (FK `auth.users`), `branch`, `rules_version` (`baseline-v2` default; `baseline-v1` retained for history), `status` (`queued`/`running`/`completed`/`failed`/`cancelled`), `attempts` (0–3), `lease_token`, `lease_expires_at`, `commit_sha` (40-char hex), `scanner_version`, `error_code`, `created_at`, `started_at`, `finished_at`. Only one `queued`/`running` job per repository is allowed (partial unique index). No `quality_score`, `score_version`, `score_calculated_at`, `severity_mapping_version`, or `error_message` columns.
+- **`scan_jobs`** (the implemented `Scan`): includes `source_kind` (`github`/`upload`), optional `source_name`/`source_digest`, plus the durable queue, result and lease columns. Only one `queued`/`running` job per repository is allowed (partial unique index).
 - **`scan_findings`** (the implemented, immutable per-scan finding — not a persistent `Issue`): composite PK `(scan_id, fingerprint)`, `repository_id`, `fingerprint` (64-char hash), `rule_id`, `severity` (`High`/`Medium`/`Low` only), `file_path`, `start_line`, `end_line`, `message`. No `title`, `category`, `start_column`/`end_column`, `code_snippet`, `status`, `metadata`, `created_at`/`updated_at` — a finding has no lifecycle or notes; it is simply what a completed scan found.
+- **`scan_source_archives`**: temporary upload bytes keyed by `scan_id`, with repository/requester linkage and forced RLS. Authenticated clients cannot read `archive`; the worker removes the row on terminal completion and cancellation removes it immediately.
 
 ---
 

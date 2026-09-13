@@ -11,6 +11,9 @@ export type Scan = {
   commit_sha: string | null;
   scanner_version: string | null;
   error_code: string | null;
+  source_kind: "github" | "upload";
+  source_name: string | null;
+  source_digest: string | null;
   created_at: string;
   started_at: string | null;
   finished_at: string | null;

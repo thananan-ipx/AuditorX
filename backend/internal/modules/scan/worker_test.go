@@ -21,9 +21,15 @@ func (q *queueStub) Finish(_ context.Context, _ Job, _ Result, code string) erro
 	return q.finishErr
 }
 
-type sourceStub struct{ err error }
+type sourceStub struct {
+	err      error
+	revision string
+}
 
 func (s sourceStub) Fetch(context.Context, Job, string) (string, error) {
+	if s.revision != "" {
+		return s.revision, s.err
+	}
 	return strings.Repeat("a", 40), s.err
 }
 
@@ -68,12 +74,38 @@ func TestWorkerOutcomes(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			q := &queueStub{claimErr: tc.claimErr, finishErr: tc.finishErr}
-			worker := Worker{Queue: q, Source: sourceStub{tc.sourceErr}, Analyzer: analyzerStub{err: tc.scanErr}}
+			worker := Worker{Queue: q, Source: sourceStub{err: tc.sourceErr}, Analyzer: analyzerStub{err: tc.scanErr}}
 			worked, err := worker.RunOne(context.Background())
 			if err != nil || worked != tc.worked || q.finished != tc.finished || q.code != tc.code {
 				t.Fatalf("outcome: %v %v %+v", worked, err, q)
 			}
 		})
+	}
+}
+
+func TestWorkerAcceptsUploadedSourceDigest(t *testing.T) {
+	q := &queueStub{job: Job{SourceKind: "upload"}}
+	worker := Worker{
+		Queue:    q,
+		Source:   sourceStub{revision: strings.Repeat("a", 64)},
+		Analyzer: analyzerStub{},
+	}
+	worked, err := worker.RunOne(context.Background())
+	if err != nil || !worked || !q.finished || q.code != "" {
+		t.Fatalf("upload outcome: worked=%v err=%v queue=%+v", worked, err, q)
+	}
+}
+
+func TestWorkerRejectsInvalidUploadedSourceDigest(t *testing.T) {
+	q := &queueStub{job: Job{SourceKind: "upload"}}
+	worker := Worker{
+		Queue:    q,
+		Source:   sourceStub{revision: strings.Repeat("a", 40)},
+		Analyzer: analyzerStub{},
+	}
+	worked, err := worker.RunOne(context.Background())
+	if err != nil || !worked || !q.finished || q.code != "INVALID_SOURCE_DIGEST" {
+		t.Fatalf("upload outcome: worked=%v err=%v queue=%+v", worked, err, q)
 	}
 }
 func TestShutdownLeavesJobForLeaseRecovery(t *testing.T) {

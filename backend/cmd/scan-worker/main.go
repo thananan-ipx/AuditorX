@@ -33,8 +33,8 @@ func main() {
 		os.Exit(1)
 	}
 	defer pool.Close()
-	worker := scan.Worker{Queue: scan.NewStore(pool), Source: scan.GitHubSource{}, Analyzer: scan.Semgrep{Executable: binary}}
-	slog.Info("scan worker ready", "rules", "baseline-v1/baseline-v2", "default_rules", "baseline-v2", "scope", "public GitHub, Python/JS/TS/Go")
+	worker := scan.Worker{Queue: scan.NewStore(pool), Source: scan.JobSource{}, Analyzer: scan.Semgrep{Executable: binary}}
+	slog.Info("scan worker ready", "rules", "baseline-v1/baseline-v2", "default_rules", "baseline-v2", "scope", "public GitHub/local upload, Python/JS/TS/Go")
 	for ctx.Err() == nil {
 		worked, err := worker.RunOne(ctx)
 		if err != nil && ctx.Err() == nil {

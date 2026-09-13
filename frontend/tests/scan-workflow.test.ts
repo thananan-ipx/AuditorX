@@ -9,6 +9,7 @@ const job = (status: Scan["status"] = "queued", id = "scan-1"): Scan => ({
   id, repository_id: "repo-1", requested_by: "user-1", branch: "main", rules_version: "baseline-v1", status,
   attempts: status === "queued" ? 0 : 1, commit_sha: status === "completed" ? "abc123" : null,
   scanner_version: status === "completed" ? "1.175.0" : null, error_code: null,
+  source_kind: "github", source_name: null, source_digest: null,
   created_at: "2026-08-28T09:00:00Z", started_at: null, finished_at: null,
 });
 const finding: Finding = { fingerprint: "fp-1", rule_id: "eval", severity: "High", file: "app.py", line: 2, end_line: 2, message: "Dynamic eval" };
@@ -22,12 +23,13 @@ function deferred<T>() {
 function harness(overrides: Partial<typeof scanService> = {}, canWrite = true) {
   let callback: (() => void) | undefined;
   const delays: number[] = [];
-  const calls = { list: 0, get: 0, findings: 0, start: 0, cancel: 0 };
+  const calls = { list: 0, get: 0, findings: 0, start: 0, upload: 0, cancel: 0 };
   const api: typeof scanService = {
     list: async () => { calls.list++; return [job()]; },
     get: async (_repo, id) => { calls.get++; return job("queued", id); },
     findings: async () => { calls.findings++; return [finding]; },
     start: async () => { calls.start++; return job(); },
+    upload: async () => { calls.upload++; return { ...job(), source_kind: "upload", source_name: "project.zip", source_digest: "a".repeat(64) }; },
     cancel: async () => { calls.cancel++; return job("cancelled"); },
     ...overrides,
   };
@@ -51,14 +53,18 @@ test("scan service encodes IDs, sends cookies, no-store reads and abort signals"
   await scanService.get(repo, scan, signal);
   await scanService.findings(repo, scan, signal);
   await scanService.start(repo, "develop", signal);
+  await scanService.upload(repo, new FormData(), signal);
   await scanService.cancel(repo, scan, signal);
-  assert.deepEqual(seen.map((item) => item.path), [root, `${root}/${encodeURIComponent(scan)}`, `${root}/${encodeURIComponent(scan)}/findings`, root, `${root}/${encodeURIComponent(scan)}/cancel`]);
+  assert.deepEqual(seen.map((item) => item.path), [root, `${root}/${encodeURIComponent(scan)}`, `${root}/${encodeURIComponent(scan)}/findings`, root, `${root}/upload`, `${root}/${encodeURIComponent(scan)}/cancel`]);
   assert.ok(seen.every(({ init }) => init?.credentials === "include" && init.signal === signal));
   assert.ok(seen.slice(0, 3).every(({ init }) => init?.cache === "no-store"));
   assert.equal(seen[3].init?.method, "POST");
   assert.deepEqual(JSON.parse(String(seen[3].init?.body)), { branch: "develop", rule_profile: "recommended" });
   assert.equal(seen[4].init?.method, "POST");
-  assert.equal(seen[4].init?.body, undefined);
+  assert.ok(seen[4].init?.body instanceof FormData);
+  assert.equal(new Headers(seen[4].init?.headers).has("Content-Type"), false);
+  assert.equal(seen[5].init?.method, "POST");
+  assert.equal(seen[5].init?.body, undefined);
 });
 
 test("polls queued/running scans, loads findings only on completion and stops polling", async (t) => {
@@ -183,6 +189,19 @@ test("enqueue guards duplicate clicks and selects returned job", async (t) => {
   await h.controller.enqueue(); assert.equal(posts, 1);
 });
 
+test("local upload uses the same mutation lock and selects its queued job", async (t) => {
+  const source = new FormData();
+  source.append("archive", new Blob(["zip"]), "project.zip");
+  let received: FormData | undefined;
+  const uploaded = { ...job(), source_kind: "upload" as const, source_name: "project.zip", source_digest: "a".repeat(64) };
+  const h = harness({ list: async () => received ? [uploaded] : [], get: async () => uploaded, upload: async (_repo, form) => { received = form; return uploaded; } });
+  t.after(h.controller.stop); h.controller.start(); await settle();
+  await h.controller.upload(source);
+  assert.equal(received, source);
+  assert.equal(h.controller.getSnapshot().selected?.source_kind, "upload");
+  assert.match(h.controller.getSnapshot().notice, /Local source uploaded/);
+});
+
 test("cancel guards duplicate clicks and stops terminal polling", async (t) => {
   const response = deferred<Scan>();
   let current = job("running"), posts = 0;
@@ -201,7 +220,8 @@ test("viewers cannot submit either mutation", async (t) => {
   const h = harness({}, false); t.after(h.controller.stop);
   h.controller.start(); await settle();
   await h.controller.enqueue(); await h.controller.cancel();
-  assert.equal(h.calls.start + h.calls.cancel, 0);
+  await h.controller.upload(new FormData());
+  assert.equal(h.calls.start + h.calls.upload + h.calls.cancel, 0);
 });
 
 test("409 enqueue conflict reloads latest job without resubmitting", async (t) => {

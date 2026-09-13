@@ -39,6 +39,9 @@ Response: `202 Accepted`, `Location` header set to the new scan's URL. Body is t
 }
 ```
 
+Upload-backed jobs additionally return `source_kind: "upload"`, a sanitized `source_name`, and
+the archive's SHA-256 `source_digest`; GitHub jobs return `source_kind: "github"` and null upload metadata.
+
 The planned response shape below (`scan_id`/`status: "Pending"`) is not what is implemented:
 
 ```json
@@ -51,6 +54,21 @@ The planned response shape below (`scan_id`/`status: "Pending"`) is not what is 
 ```
 
 When queue mode is **not** active, this same path instead returns `501 SCANNER_NOT_READY` with no job created.
+
+---
+
+## POST /api/v1/repositories/{repository_id}/scans/upload **(implemented, queue mode only)**
+
+Enqueues local source for the current repository workspace. Requires `owner` or `editor` access
+and `multipart/form-data` containing either one `archive` part with a `.zip` filename, or folder
+files whose form names are `file:{relative-path}`. The same one-active-scan rule and source limits
+apply: 20 MiB total, 1 MiB per supported file and at most 1,000 supported files. Only
+`.py`, `.js`, `.jsx`, `.ts`, `.tsx` and `.go` are analyzed. Unsafe paths, symlinks, hidden folders,
+dependencies and repository-supplied configuration are rejected or ignored as appropriate.
+
+The archive bytes are write-only to authenticated clients, verified again by the worker, and
+deleted after a terminal worker result or cancellation. Returns `202 Accepted` and the same job
+shape as the GitHub enqueue route.
 
 ---
 
@@ -157,6 +175,7 @@ Implemented (`backend/internal/modules/scan/http.go`):
 - `RESOURCE_NOT_FOUND` (404) — repository or scan not found
 - `INSUFFICIENT_ACCESS` (403) — write access required to enqueue/cancel
 - `INVALID_JSON` / `INVALID_INPUT` (400) — bad request body, wrong branch, or unsupported rule profile
+- `INVALID_UPLOAD` (400) — malformed, unsafe, empty or oversized local source upload
 - `SCAN_CONFLICT` (409) — scan already active, or no longer cancellable
 - `SCAN_NOT_COMPLETED` (409) — findings requested before the scan finished
 - `SCAN_STORE_UNAVAILABLE` (503) — storage/configuration problem

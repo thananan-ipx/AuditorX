@@ -30,7 +30,7 @@
 | `auditorx.go.coding-standard.sensitive-logging` | Go | WARNING | Medium | secret-like variable written with log/fmt |
 | `auditorx.go.code-quality.unhandled-json-error` | Go | WARNING | Medium | ignored JSON encoder/decoder error |
 
-The scan worker (`backend/internal/modules/scan/scanner.go`) pins Semgrep Community Edition to exactly version `1.175.0` and fails closed (returns no findings) if the installed Semgrep reports a different version, scanner errors, more than 1000 results, an unsupported ruleset version, or a rule ID outside the allowlist for that version. The rules have real positive/negative fixture coverage. A general path-traversal rule is intentionally deferred until framework-specific taint sources and sanitizers can be defined without excessive false positives.
+The scan worker (`backend/internal/modules/scan/scanner.go`) pins Semgrep Community Edition to exactly version `1.175.0` and fails closed (returns no findings) if the installed Semgrep reports a different version, fatal or unknown scanner diagnostics, more than 1000 results, an unsupported ruleset version, or a rule ID outside the allowlist for that version. The one tolerated diagnostic is Semgrep's structured warning-level `PartialParsing`: findings from valid portions remain usable while the affected source fragments are skipped. The rules have real positive/negative fixture coverage. A general path-traversal rule is intentionally deferred until framework-specific taint sources and sanitizers can be defined without excessive false positives.
 
 ---
 

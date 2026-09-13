@@ -94,7 +94,7 @@ func (s Semgrep) Analyze(ctx context.Context, source, rulesVersion string) (Resu
 	cmd := exec.CommandContext(ctx, executable, "scan", "--config", configPath, "--json", "--quiet", "--strict", "--oss-only", "--metrics=off", "--disable-version-check", "--no-git-ignore", "--no-rewrite-rule-ids", "--jobs=1", "--timeout=10", "--max-memory=512", "--max-target-bytes=1048576", ".")
 	cmd.Dir = source
 	// Do not pass database passwords, API tokens, Python overrides or user config.
-	cmd.Env = []string{"SEMGREP_SEND_METRICS=off", "SEMGREP_ENABLE_VERSION_CHECK=0", "SEMGREP_SETTINGS_FILE=" + filepath.Join(scratch, "settings.yml"), "SEMGREP_LOG_FILE=" + filepath.Join(scratch, "semgrep.log"), "OTEL_SDK_DISABLED=true", "PYTHONUTF8=1", "TMP=" + scratch, "TEMP=" + scratch, "TMPDIR=" + scratch}
+	cmd.Env = []string{"SEMGREP_SEND_METRICS=off", "SEMGREP_ENABLE_VERSION_CHECK=0", "SEMGREP_SETTINGS_FILE=" + filepath.Join(scratch, "settings.yml"), "SEMGREP_LOG_FILE=" + filepath.Join(scratch, "semgrep.log"), "OTEL_SDK_DISABLED=true", "PYTHONUTF8=1", "HOME=" + scratch, "USERPROFILE=" + scratch, "TMP=" + scratch, "TEMP=" + scratch, "TMPDIR=" + scratch}
 	for _, key := range []string{"SystemRoot", "WINDIR"} {
 		if value := os.Getenv(key); value != "" {
 			cmd.Env = append(cmd.Env, key+"="+value)
@@ -110,9 +110,10 @@ func (s Semgrep) Analyze(ctx context.Context, source, rulesVersion string) (Resu
 	cmd.Stderr = stderr
 	if err = cmd.Run(); err != nil {
 		var exitError *exec.ExitError
-		// Semgrep may use exit 1 for findings. A complete JSON result with no
-		// scanner errors is still required; all other exit statuses fail closed.
-		if !errors.As(err, &exitError) || exitError.ExitCode() != 1 || ctx.Err() != nil {
+		// Semgrep uses exit 1 for findings/strict warnings and its Windows wrapper
+		// may use exit 3 for warning-level partial parsing in an isolated profile.
+		// Both remain gated on a complete, allowlisted JSON result below.
+		if !errors.As(err, &exitError) || (exitError.ExitCode() != 1 && exitError.ExitCode() != 3) || ctx.Err() != nil {
 			return Result{}, fmt.Errorf("semgrep process failed: %w", err)
 		}
 		if _, parseErr := parseFindings(output.Bytes(), rulesVersion); parseErr != nil {
@@ -148,7 +149,7 @@ func parseFindings(data []byte, rulesVersion string) (Result, error) {
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return Result{}, err
 	}
-	if raw.Version != "1.175.0" || raw.Results == nil || len(raw.Errors) > 0 || len(raw.Results) > 1000 {
+	if raw.Version != "1.175.0" || raw.Results == nil || !onlyPartialParsingWarnings(raw.Errors) || len(raw.Results) > 1000 {
 		return Result{}, errors.New("unsupported, incomplete or oversized scan result")
 	}
 	result := Result{ScannerVersion: raw.Version, Findings: []Finding{}}
@@ -175,4 +176,25 @@ func parseFindings(data []byte, rulesVersion string) (Result, error) {
 		result.Findings = append(result.Findings, Finding{Fingerprint: fingerprint, RuleID: item.Rule, File: file, Line: item.Start.Line, EndLine: item.End.Line, Message: item.Extra.Message, Severity: severity})
 	}
 	return result, nil
+}
+
+// Semgrep reports recoverable parser gaps as level=warn PartialParsing entries.
+// The remaining AST and findings are still usable; every other diagnostic stays
+// fail-closed so engine/config/runtime failures cannot be mistaken for success.
+func onlyPartialParsingWarnings(items []json.RawMessage) bool {
+	for _, item := range items {
+		var diagnostic struct {
+			Code  int               `json:"code"`
+			Level string            `json:"level"`
+			Type  []json.RawMessage `json:"type"`
+		}
+		if err := json.Unmarshal(item, &diagnostic); err != nil || diagnostic.Code != 3 || diagnostic.Level != "warn" || len(diagnostic.Type) == 0 {
+			return false
+		}
+		var kind string
+		if err := json.Unmarshal(diagnostic.Type[0], &kind); err != nil || kind != "PartialParsing" {
+			return false
+		}
+	}
+	return true
 }

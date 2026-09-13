@@ -29,6 +29,8 @@ export async function database() {
     await db.exec(scanMigration);
     const rulesMigration = await readFile(new URL('../../supabase/migrations/20260912144015_add_baseline_v2_ruleset.sql', import.meta.url), 'utf8');
     await db.exec(rulesMigration);
+    const uploadMigration = await readFile(new URL('../../supabase/migrations/20260912152408_add_uploaded_scan_sources.sql', import.meta.url), 'utf8');
+    await db.exec(uploadMigration);
     return db;
   } catch (err) {
     await db.close();

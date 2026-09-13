@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
-import { Clock3, GitBranch, LoaderCircle, Play, RefreshCw, Square } from "lucide-react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ChangeEvent, type InputHTMLAttributes } from "react";
+import { CheckCircle2, Clock3, FolderOpen, GitBranch, ListChecks, LoaderCircle, Play, RefreshCw, ShieldAlert, Square, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { WorkspaceError } from "@/features/repositories/components/workspace-fee
 import { dashboardHref } from "@/features/repositories/service/repository-service";
 import { useLanguage, type Locale } from "@/lib/i18n";
 import type { Repository } from "@/features/repositories/types";
+import { RULE_CATALOG } from "../rule-catalog";
 import { ScanController, type ScanState } from "../service/scan-controller";
 import { isActive, type Finding, type Scan, type ScanStatus } from "../types";
 
@@ -38,6 +39,7 @@ export function failureMessage(code: string | null, translate: (message: string)
   switch (code) {
     case "SOURCE_UNAVAILABLE": return translate("Source could not be retrieved. Check that the GitHub repository and registered branch are public and available; source size or path limits may also apply.");
     case "INVALID_COMMIT": return translate("The source commit could not be verified. No findings were published.");
+    case "INVALID_SOURCE_DIGEST": return translate("The uploaded source could not be verified. No findings were published.");
     case "SCANNER_FAILED": return translate("The scanner could not produce valid results. Ask an administrator to check worker logs and scanner configuration.");
     case "SCAN_TIMEOUT": return translate("The scan exceeded its time limit. No partial findings were published.");
     case "ACCESS_REVOKED": return translate("The requesting user's repository access was revoked before the scan could complete.");
@@ -53,12 +55,13 @@ export function RepositoryScans({ repository }: { repository: Repository }) {
   useEffect(() => { controller.start(); return controller.stop; }, [controller]);
   return <ScanWorkspace repository={repository} state={state} canWrite={canWrite}
     onStart={() => { void controller.enqueue(); }} onCancel={() => { void controller.cancel(); }}
+    onUpload={(source) => { void controller.upload(source); }}
     onSelect={controller.select} onRefresh={controller.retry} />;
 }
 
-export function ScanWorkspace({ repository, state, canWrite, onStart, onCancel, onSelect, onRefresh }: {
+export function ScanWorkspace({ repository, state, canWrite, onStart, onUpload, onCancel, onSelect, onRefresh }: {
   repository: Repository; state: ScanState; canWrite: boolean;
-  onStart: () => void; onCancel: () => void; onSelect: (id: string) => void; onRefresh: () => void;
+  onStart: () => void; onUpload: (source: FormData) => void; onCancel: () => void; onSelect: (id: string) => void; onRefresh: () => void;
 }) {
   const { locale, t } = useLanguage();
   const active = state.jobs.find(isActive);
@@ -75,7 +78,8 @@ export function ScanWorkspace({ repository, state, canWrite, onStart, onCancel, 
         </Button>
       </div>
     </section>
-    <p className="max-w-3xl text-sm leading-6 text-muted-foreground">{t("Scans public GitHub source using 14 focused rules for Python, JavaScript, TypeScript and Go. Coverage includes dynamic code execution, embedded credentials, command execution, SQL construction, sensitive logging, TLS verification and selected error handling. This is not a comprehensive security audit. No quality score or AI assessment is generated.")}</p>
+    <p className="max-w-3xl text-sm leading-6 text-muted-foreground">{t("Scans public GitHub source or a local upload using 14 focused rules for Python, JavaScript, TypeScript and Go. Uploaded code is deleted after processing. This is not a comprehensive security audit.")}</p>
+    {canWrite && <LocalUploadControls disabled={state.phase !== "ready" || !!state.action || !!active} uploading={state.action === "upload"} onUpload={onUpload} />}
     {!canWrite && <p className="text-sm text-muted-foreground">{t("Only repository owners and editors can start or cancel scans.")}</p>}
     {state.notice && <p role="status" className="rounded-xl border bg-white p-4 text-sm">{state.notice}</p>}
     {state.phase === "error" ? <WorkspaceError error={state.error} retry={onRefresh} returnTo={dashboardHref(repository.id)} />
@@ -93,17 +97,77 @@ export function ScanWorkspace({ repository, state, canWrite, onStart, onCancel, 
                 className="w-full rounded-xl border p-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-700 disabled:opacity-50 aria-pressed:border-lime-500 aria-pressed:bg-lime-50/60">
                 <div className="flex items-center justify-between gap-2"><Badge className={statusStyles[scan.status]}>{t(statusLabels[scan.status])}</Badge><span className="font-mono text-xs text-muted-foreground">{scan.id.slice(0, 8)}</span></div>
                 <time dateTime={scan.created_at} className="mt-2 block text-xs text-muted-foreground">{timestamp(scan.created_at, locale, t)}</time>
-                <span className="mt-1 block break-all text-xs">{scan.branch}</span>
+                <span className="mt-1 block break-all text-xs">{scan.source_kind === "upload" ? `${t("Local upload")}: ${scan.source_name}` : scan.branch}</span>
               </button></li>)}
             </ul></CardContent>
           </Card>
           {state.selected ? <div className="min-w-0 space-y-5">
             <ScanDetails scan={state.selected} canCancel={canWrite && isActive(state.selected)} cancelling={state.action === "cancel"} busy={!!state.action} onCancel={onCancel} />
-            {state.selected.status === "completed" && state.findings !== null && <Findings key={state.selected.id} findings={state.findings} />}
+            {state.selected.status === "completed" && state.findings !== null && <Findings key={state.selected.id} findings={state.findings} rulesVersion={state.selected.rules_version} />}
           </div> : <p className="p-5 text-sm text-muted-foreground">{t("Loading the selected scan…")}</p>}
         </div>}
       </>}
   </div>;
+}
+
+const supportedExtensions = [".py", ".js", ".jsx", ".ts", ".tsx", ".go"];
+
+function LocalUploadControls({ disabled, uploading, onUpload }: { disabled: boolean; uploading: boolean; onUpload: (source: FormData) => void }) {
+  const { t } = useLanguage();
+  const zipInput = useRef<HTMLInputElement>(null);
+  const folderInput = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState("");
+
+  function uploadZip(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".zip") || file.size === 0 || file.size > 20 * 1024 * 1024) {
+      setError(t("Choose a non-empty ZIP file up to 20 MiB."));
+      return;
+    }
+    const data = new FormData();
+    data.append("archive", file, file.name);
+    setError("");
+    onUpload(data);
+  }
+
+  function uploadFolder(event: ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    const files = selected.filter((file) => {
+      const parts = (file.webkitRelativePath || file.name).split("/");
+      const directories = parts.slice(1, -1);
+      return supportedExtensions.some((extension) => file.name.toLowerCase().endsWith(extension))
+        && !directories.some((part) => part.startsWith(".") || part.toLowerCase() === "node_modules" || part.toLowerCase() === "vendor");
+    });
+    const total = files.reduce((sum, file) => sum + file.size, 0);
+    if (files.length === 0 || files.length > 1000 || files.some((file) => file.size > 1024 * 1024) || total > 20 * 1024 * 1024) {
+      setError(t("Choose a folder with up to 1,000 supported source files, 1 MiB per file and 20 MiB total."));
+      return;
+    }
+    const data = new FormData();
+    for (const file of files) {
+      const parts = (file.webkitRelativePath || file.name).split("/");
+      const relative = parts.length > 1 ? parts.slice(1).join("/") : parts[0];
+      data.append(`file:${relative}`, file, file.name);
+    }
+    setError("");
+    onUpload(data);
+  }
+
+  return <Card>
+    <CardHeader><CardTitle>{t("Scan code from this computer")}</CardTitle><CardDescription>{t("Choose a project folder or ZIP archive. Only supported source files are uploaded, and the archive is deleted when processing finishes.")}</CardDescription></CardHeader>
+    <CardContent className="flex flex-wrap items-center gap-3">
+      <input ref={folderInput} type="file" multiple className="sr-only" onChange={uploadFolder} {...({ webkitdirectory: "", directory: "" } as InputHTMLAttributes<HTMLInputElement>)} />
+      <input ref={zipInput} type="file" accept=".zip,application/zip" className="sr-only" onChange={uploadZip} />
+      <Button type="button" variant="outline" disabled={disabled} onClick={() => folderInput.current?.click()}><FolderOpen size={15} aria-hidden="true" />{t("Choose folder")}</Button>
+      <Button type="button" variant="outline" disabled={disabled} onClick={() => zipInput.current?.click()}><Upload size={15} aria-hidden="true" />{t("Choose ZIP")}</Button>
+      {uploading && <span role="status" className="flex items-center gap-2 text-sm"><LoaderCircle size={15} className="animate-spin" aria-hidden="true" />{t("Uploading…")}</span>}
+      {error && <p role="alert" className="w-full text-sm text-red-700">{error}</p>}
+      <p className="w-full text-xs text-muted-foreground">{t("Limits: 20 MiB total, 1 MiB per file, up to 1,000 source files. Dependencies, hidden folders and repository configuration are ignored.")}</p>
+    </CardContent>
+  </Card>;
 }
 
 function ScanDetails({ scan, canCancel, cancelling, busy, onCancel }: { scan: Scan; canCancel: boolean; cancelling: boolean; busy: boolean; onCancel: () => void }) {
@@ -116,7 +180,7 @@ function ScanDetails({ scan, canCancel, cancelling, busy, onCancel }: { scan: Sc
         : scan.status === "cancelled" ? t("This scan was cancelled and cannot publish findings. An already-running analyzer may continue until it stops or times out.")
         : t("Analysis completed. The findings below belong to this scan and its recorded commit.")}</p>
       <dl className="grid gap-4 text-sm sm:grid-cols-2">
-        {[["Branch", scan.branch], ["Commit", scan.commit_sha ?? t("Not recorded")], ["Rules", scan.rules_version], ["Scanner", scan.scanner_version ?? t("Not recorded")], ["Queued", timestamp(scan.created_at, locale, t)], ["Started", timestamp(scan.started_at, locale, t)], ["Finished", timestamp(scan.finished_at, locale, t)]].map(([label, value]) => <div key={label}><dt className="text-xs text-muted-foreground">{t(label)}</dt><dd className="mt-1 break-all font-mono text-xs">{value}</dd></div>)}
+        {[["Source", scan.source_kind === "upload" ? scan.source_name ?? t("Local upload") : scan.branch], [scan.source_kind === "upload" ? "Digest" : "Commit", scan.commit_sha ?? scan.source_digest ?? t("Not recorded")], ["Rules", scan.rules_version], ["Scanner", scan.scanner_version ?? t("Not recorded")], ["Queued", timestamp(scan.created_at, locale, t)], ["Started", timestamp(scan.started_at, locale, t)], ["Finished", timestamp(scan.finished_at, locale, t)]].map(([label, value]) => <div key={label}><dt className="text-xs text-muted-foreground">{t(label)}</dt><dd className="mt-1 break-all font-mono text-xs">{value}</dd></div>)}
       </dl>
       {canCancel && <Button variant="outline" disabled={busy} onClick={onCancel}><Square size={13} aria-hidden="true" />{cancelling ? t("Cancelling…") : t("Cancel scan")}</Button>}
     </CardContent>
@@ -129,7 +193,43 @@ export function filterFindings(findings: Finding[], severity: string, query: str
     && `${finding.file} ${finding.rule_id} ${finding.message}`.toLowerCase().includes(needle));
 }
 
-function Findings({ findings }: { findings: Finding[] }) {
+function RuleCoverage({ rulesVersion, findings }: { rulesVersion: string; findings: Finding[] }) {
+  const { t } = useLanguage();
+  const catalog = RULE_CATALOG[rulesVersion];
+  if (!catalog || catalog.length === 0) return null;
+  const counts = new Map<string, number>();
+  for (const finding of findings) counts.set(finding.rule_id, (counts.get(finding.rule_id) ?? 0) + 1);
+  const categories = Array.from(new Set(catalog.map((rule) => rule.category)));
+  return <Card>
+    <CardHeader><CardTitle className="flex items-center gap-2"><ListChecks size={18} aria-hidden="true" />{t("What this scan checked")}</CardTitle>
+      <CardDescription>{t("Every rule below ran against this commit. A checkmark means the rule found nothing, not that the file was free of that whole category of risk.")}</CardDescription>
+    </CardHeader>
+    <CardContent className="space-y-5">
+      {categories.map((category) => <div key={category}>
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t(category)}</h3>
+        <ul className="space-y-2">
+          {catalog.filter((rule) => rule.category === category).map((rule) => {
+            const count = counts.get(rule.id) ?? 0;
+            return <li key={rule.id} className="flex items-start gap-3 rounded-lg border p-3">
+              {count === 0
+                ? <CheckCircle2 className="mt-0.5 shrink-0 text-lime-600" size={18} aria-hidden="true" />
+                : <ShieldAlert className="mt-0.5 shrink-0 text-orange-600" size={18} aria-hidden="true" />}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{rule.title}</p>
+                <p className="text-xs text-muted-foreground">{rule.description}</p>
+              </div>
+              <Badge className={count === 0 ? "border-lime-200 bg-lime-50 text-lime-800" : "border-orange-200 bg-orange-50 text-orange-800"}>
+                {count === 0 ? t("No matches") : `${count} ${count === 1 ? t("match") : t("matches")}`}
+              </Badge>
+            </li>;
+          })}
+        </ul>
+      </div>)}
+    </CardContent>
+  </Card>;
+}
+
+function Findings({ findings, rulesVersion }: { findings: Finding[]; rulesVersion: string }) {
   const { t } = useLanguage();
   const [severity, setSeverity] = useState("All");
   const [query, setQuery] = useState("");
@@ -138,7 +238,9 @@ function Findings({ findings }: { findings: Finding[] }) {
   const pageSize = 50;
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, pageCount - 1);
-  return <Card><CardHeader><CardTitle>{t("Findings")} <span className="ml-2 text-muted-foreground">{findings.length}</span></CardTitle><CardDescription>{t("Rule matches for the selected scan · up to 1,000 findings")}</CardDescription></CardHeader>
+  return <div className="space-y-5">
+  <RuleCoverage rulesVersion={rulesVersion} findings={findings} />
+  <Card><CardHeader><CardTitle>{t("Findings")} <span className="ml-2 text-muted-foreground">{findings.length}</span></CardTitle><CardDescription>{t("Rule matches for the selected scan · up to 1,000 findings")}</CardDescription></CardHeader>
     <CardContent className="space-y-5">
       <div className="grid grid-cols-3 gap-3">{(["High", "Medium", "Low"] as const).map((level) => <div key={level} className="rounded-xl border bg-slate-50 p-3"><p className="text-xs text-muted-foreground">{t(level)}</p><p className="mt-1 text-xl font-semibold">{findings.filter((finding) => finding.severity === level).length}</p></div>)}</div>
       {findings.length === 0 ? <p className="rounded-xl border border-lime-200 bg-lime-50 p-4 text-sm leading-6">{t("No findings matched the configured rules. This does not mean the repository is free of vulnerabilities or that every file was analyzed.")}</p> : <>
@@ -155,5 +257,6 @@ function Findings({ findings }: { findings: Finding[] }) {
         {pageCount > 1 && <div className="flex items-center justify-between gap-3"><Button variant="outline" size="sm" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>{t("Previous")}</Button><p className="text-xs">{t("Page")} {currentPage + 1} {t("of")} {pageCount}</p><Button variant="outline" size="sm" disabled={currentPage + 1 >= pageCount} onClick={() => setPage(currentPage + 1)}>{t("Next")}</Button></div>}
       </>}
     </CardContent>
-  </Card>;
+  </Card>
+  </div>;
 }

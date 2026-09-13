@@ -4,6 +4,8 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io"
@@ -22,11 +24,34 @@ const maxSourceBytes = 20 << 20
 const maxFileBytes = 1 << 20
 
 var shaPattern = regexp.MustCompile(`^[0-9a-f]{40}$`)
+var uploadDigestPattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
 var sourceURLPattern = regexp.MustCompile(`^https://github\.com/([a-z0-9][a-z0-9-]{0,38})/([a-z0-9_.-]{1,100})$`)
 var sourceBranchPattern = regexp.MustCompile(`^[a-zA-Z0-9_][a-zA-Z0-9_./-]{0,254}$`)
 
 type Source interface {
 	Fetch(context.Context, Job, string) (string, error)
+}
+
+// JobSource selects only between the two source kinds persisted by the API.
+// Uploaded archives have already passed the same extraction validation once,
+// but are hashed and validated again at the worker trust boundary.
+type JobSource struct{}
+
+func (JobSource) Fetch(ctx context.Context, j Job, destination string) (string, error) {
+	if j.SourceKind != "upload" {
+		return (GitHubSource{}).Fetch(ctx, j, destination)
+	}
+	if j.SourceDigest == nil || !uploadDigestPattern.MatchString(*j.SourceDigest) || len(j.Archive) == 0 {
+		return "", errors.New("invalid uploaded source")
+	}
+	digest := sha256.Sum256(j.Archive)
+	if hex.EncodeToString(digest[:]) != *j.SourceDigest {
+		return "", errors.New("uploaded source digest mismatch")
+	}
+	if err := extractUploadedSource(j.Archive, destination); err != nil {
+		return "", err
+	}
+	return *j.SourceDigest, nil
 }
 
 // GitHubSource fetches PUBLIC repositories without credentials. URLs cannot be
@@ -89,6 +114,14 @@ func (GitHubSource) Fetch(ctx context.Context, j Job, destination string) (strin
 // extractSource accepts only regular source files. It never restores symlinks,
 // executables, repository config, .git, dependency directories or install hooks.
 func extractSource(data []byte, destination string) error {
+	return extractArchive(data, destination, true)
+}
+
+func extractUploadedSource(data []byte, destination string) error {
+	return extractArchive(data, destination, false)
+}
+
+func extractArchive(data []byte, destination string, requireWrapper bool) error {
 	if len(data) > maxArchiveBytes {
 		return errors.New("archive too large")
 	}
@@ -101,6 +134,10 @@ func extractSource(data []byte, destination string) error {
 	}
 	seen := map[string]bool{}
 	root := ""
+	stripRoot := requireWrapper
+	if !requireWrapper {
+		stripRoot = commonArchiveRoot(reader.File) != ""
+	}
 	total := int64(0)
 	count := 0
 	for _, entry := range reader.File {
@@ -118,10 +155,12 @@ func extractSource(data []byte, destination string) error {
 				return errors.New("reserved archive name")
 			}
 		}
-		if root == "" {
-			root = parts[0]
-		} else if root != parts[0] {
-			return errors.New("multiple archive roots")
+		if stripRoot {
+			if root == "" {
+				root = parts[0]
+			} else if root != parts[0] {
+				return errors.New("multiple archive roots")
+			}
 		}
 		if entry.Mode()&os.ModeSymlink != 0 || (!entry.FileInfo().IsDir() && !entry.Mode().IsRegular()) {
 			return errors.New("non-regular archive entry")
@@ -129,10 +168,13 @@ func extractSource(data []byte, destination string) error {
 		if entry.FileInfo().IsDir() {
 			continue
 		}
-		if len(parts) < 2 {
+		if stripRoot && len(parts) < 2 {
 			return errors.New("source file outside repository root")
 		}
-		relative := strings.Join(parts[1:], "/")
+		relative := name
+		if stripRoot {
+			relative = strings.Join(parts[1:], "/")
+		}
 		if len(relative) > 500 {
 			return errors.New("source path too long")
 		}
@@ -142,8 +184,10 @@ func extractSource(data []byte, destination string) error {
 		}
 		seen[key] = true
 		skip := false
-		for _, part := range parts[1 : len(parts)-1] {
-			if strings.HasPrefix(part, ".") || part == "node_modules" || part == "vendor" {
+		relativeParts := strings.Split(relative, "/")
+		for _, part := range relativeParts[:len(relativeParts)-1] {
+			lowerPart := strings.ToLower(part)
+			if strings.HasPrefix(part, ".") || lowerPart == "node_modules" || lowerPart == "vendor" {
 				skip = true
 			}
 		}
@@ -192,4 +236,24 @@ func extractSource(data []byte, destination string) error {
 		return errors.New("no supported source files")
 	}
 	return nil
+}
+
+func commonArchiveRoot(files []*zip.File) string {
+	root := ""
+	for _, entry := range files {
+		name := strings.TrimSuffix(entry.Name, "/")
+		parts := strings.Split(name, "/")
+		if name == "" || len(parts) < 2 {
+			if !entry.FileInfo().IsDir() {
+				return ""
+			}
+			continue
+		}
+		if root == "" {
+			root = parts[0]
+		} else if root != parts[0] {
+			return ""
+		}
+	}
+	return root
 }

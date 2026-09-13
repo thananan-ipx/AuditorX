@@ -1,8 +1,11 @@
 package scan
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"errors"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -31,9 +34,69 @@ func (s *jobsStub) Enqueue(context.Context, string, string, string) (Job, error)
 	s.calls++
 	return Job{ID: bob, Status: "queued"}, s.err
 }
+func (s *jobsStub) EnqueueUpload(context.Context, string, string, string, string, string, []byte) (Job, error) {
+	s.calls++
+	return Job{ID: bob, Status: "queued", SourceKind: "upload"}, s.err
+}
 func (s *jobsStub) Get(context.Context, string, string, string) (Job, error) {
 	s.calls++
 	return Job{ID: bob, Status: s.status}, s.err
+}
+
+func uploadRequest(t *testing.T, field, filename string, content []byte) (*http.Request, string) {
+	t.Helper()
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, err := writer.CreateFormFile(field, filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = part.Write(content); err != nil {
+		t.Fatal(err)
+	}
+	if err = writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequest("POST", "/api/v1/repositories/"+alice+"/scans/upload", &body)
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	return request, writer.FormDataContentType()
+}
+
+func TestEnqueueUploadHTTP(t *testing.T) {
+	var archive bytes.Buffer
+	zw := zip.NewWriter(&archive)
+	entry, err := zw.Create("app.py")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _ = entry.Write([]byte("print('safe')\n"))
+	if err = zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, access, field, filename string
+		content                       []byte
+		want, calls                   int
+	}{
+		{name: "zip", access: "owner", field: "archive", filename: "project.zip", content: archive.Bytes(), want: 202, calls: 1},
+		{name: "folder", access: "editor", field: "file:src/app.py", filename: "app.py", content: []byte("print('safe')\n"), want: 202, calls: 1},
+		{name: "viewer", access: "viewer", field: "archive", filename: "project.zip", content: archive.Bytes(), want: 403},
+		{name: "wrong type", access: "owner", field: "archive", filename: "project.txt", content: archive.Bytes(), want: 400},
+		{name: "invalid zip", access: "owner", field: "archive", filename: "project.zip", content: []byte("not a zip"), want: 400},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			jobs := &jobsStub{}
+			mux := http.NewServeMux()
+			Handler{Repositories: readerStub{access: tc.access}, Jobs: jobs}.RegisterRoutes(mux)
+			request, _ := uploadRequest(t, tc.field, tc.filename, tc.content)
+			request = request.WithContext(identity.WithUserID(request.Context(), alice))
+			rec := httptest.NewRecorder()
+			mux.ServeHTTP(rec, request)
+			if rec.Code != tc.want || jobs.calls != tc.calls {
+				t.Fatalf("status/calls=%d/%d body=%s", rec.Code, jobs.calls, rec.Body)
+			}
+		})
+	}
 }
 func (s *jobsStub) List(context.Context, string, string) ([]Job, error) {
 	s.calls++

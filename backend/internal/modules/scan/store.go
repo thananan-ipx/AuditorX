@@ -38,11 +38,11 @@ func (s *Store) begin(ctx context.Context, actor string, worker bool) (pgx.Tx, e
 	return tx, nil
 }
 
-const jobColumns = `id::text,repository_id::text,requested_by::text,branch,rules_version,status,attempts,commit_sha,scanner_version,error_code,created_at,started_at,finished_at`
+const jobColumns = `id::text,repository_id::text,requested_by::text,branch,rules_version,status,attempts,commit_sha,scanner_version,error_code,source_kind,source_name,source_digest,created_at,started_at,finished_at`
 
 func readJob(row interface{ Scan(...any) error }) (Job, error) {
 	var j Job
-	err := row.Scan(&j.ID, &j.RepositoryID, &j.RequestedBy, &j.Branch, &j.RulesVersion, &j.Status, &j.Attempts, &j.CommitSHA, &j.ScannerVersion, &j.ErrorCode, &j.CreatedAt, &j.StartedAt, &j.FinishedAt)
+	err := row.Scan(&j.ID, &j.RepositoryID, &j.RequestedBy, &j.Branch, &j.RulesVersion, &j.Status, &j.Attempts, &j.CommitSHA, &j.ScannerVersion, &j.ErrorCode, &j.SourceKind, &j.SourceName, &j.SourceDigest, &j.CreatedAt, &j.StartedAt, &j.FinishedAt)
 	return j, translate(err)
 }
 func translate(err error) error {
@@ -64,6 +64,23 @@ func (s *Store) Enqueue(ctx context.Context, actor, repo, branch string) (Job, e
 	defer rollback(tx)
 	job, err := readJob(tx.QueryRow(ctx, `INSERT INTO public.scan_jobs(repository_id,requested_by,branch) VALUES ($1::uuid,$2::uuid,$3) RETURNING `+jobColumns, repo, actor, branch))
 	if err != nil {
+		return Job{}, err
+	}
+	return job, tx.Commit(ctx)
+}
+
+func (s *Store) EnqueueUpload(ctx context.Context, actor, repo, branch, name, digest string, archive []byte) (Job, error) {
+	tx, err := s.begin(ctx, actor, false)
+	if err != nil {
+		return Job{}, err
+	}
+	defer rollback(tx)
+	job, err := readJob(tx.QueryRow(ctx, `INSERT INTO public.scan_jobs(repository_id,requested_by,branch,source_kind,source_name,source_digest)
+ VALUES ($1::uuid,$2::uuid,$3,'upload',$4,$5) RETURNING `+jobColumns, repo, actor, branch, name, digest))
+	if err != nil {
+		return Job{}, err
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO public.scan_source_archives(scan_id,repository_id,requested_by,archive) VALUES ($1::uuid,$2::uuid,$3::uuid,$4)`, job.ID, repo, actor, archive); err != nil {
 		return Job{}, err
 	}
 	return job, tx.Commit(ctx)
@@ -140,6 +157,9 @@ func (s *Store) Cancel(ctx context.Context, actor, repo, id string) (Job, error)
 		return Job{}, err
 	}
 	defer rollback(tx)
+	if _, err = tx.Exec(ctx, `DELETE FROM public.scan_source_archives WHERE repository_id=$1::uuid AND scan_id=$2::uuid`, repo, id); err != nil {
+		return Job{}, err
+	}
 	job, err := readJob(tx.QueryRow(ctx, `UPDATE public.scan_jobs SET status='cancelled',finished_at=now() WHERE repository_id=$1::uuid AND id=$2::uuid AND status IN ('queued','running') RETURNING `+jobColumns, repo, id))
 	if errors.Is(err, ErrNotFound) {
 		return Job{}, ErrConflict
@@ -158,9 +178,11 @@ func (s *Store) Claim(ctx context.Context) (Job, error) {
 		return Job{}, err
 	}
 	defer rollback(tx)
-	_, err = tx.Exec(ctx, `UPDATE public.scan_jobs j SET status='failed',error_code=CASE WHEN attempts>=3 THEN 'RETRY_EXHAUSTED' ELSE 'ACCESS_REVOKED' END,finished_at=now(),lease_token=NULL,lease_expires_at=NULL
+	_, err = tx.Exec(ctx, `WITH failed AS (
+ UPDATE public.scan_jobs j SET status='failed',error_code=CASE WHEN attempts>=3 THEN 'RETRY_EXHAUSTED' ELSE 'ACCESS_REVOKED' END,finished_at=now(),lease_token=NULL,lease_expires_at=NULL
  WHERE (status='queued' OR (status='running' AND lease_expires_at<now())) AND (attempts>=3 OR NOT EXISTS (
- SELECT 1 FROM public.repository_members m WHERE m.repository_id=j.repository_id AND m.user_id=j.requested_by AND m.access_level IN ('owner','editor')))`)
+ SELECT 1 FROM public.repository_members m WHERE m.repository_id=j.repository_id AND m.user_id=j.requested_by AND m.access_level IN ('owner','editor'))) RETURNING id)
+ DELETE FROM public.scan_source_archives a USING failed WHERE a.scan_id=failed.id`)
 	if err != nil {
 		return Job{}, err
 	}
@@ -176,7 +198,7 @@ func (s *Store) Claim(ctx context.Context) (Job, error) {
 		}
 		return Job{}, err
 	}
-	err = tx.QueryRow(ctx, `SELECT j.lease_token::text,r.repository_url FROM public.scan_jobs j JOIN public.repositories r ON r.id=j.repository_id WHERE j.id=$1::uuid`, j.ID).Scan(&j.LeaseToken, &j.RepositoryURL)
+	err = tx.QueryRow(ctx, `SELECT j.lease_token::text,r.repository_url,a.archive FROM public.scan_jobs j JOIN public.repositories r ON r.id=j.repository_id LEFT JOIN public.scan_source_archives a ON a.scan_id=j.id WHERE j.id=$1::uuid`, j.ID).Scan(&j.LeaseToken, &j.RepositoryURL, &j.Archive)
 	if err != nil {
 		return Job{}, err
 	}
@@ -205,6 +227,9 @@ func (s *Store) Finish(ctx context.Context, j Job, result Result, errorCode stri
 	}
 	if !authorized {
 		errorCode = "ACCESS_REVOKED"
+	}
+	if _, err = tx.Exec(ctx, `DELETE FROM public.scan_source_archives WHERE scan_id=$1::uuid`, j.ID); err != nil {
+		return err
 	}
 	status := "failed"
 	if errorCode == "" {

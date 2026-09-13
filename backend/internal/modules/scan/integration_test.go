@@ -2,6 +2,8 @@ package scan
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -184,6 +186,27 @@ func TestPostgresIntegration(t *testing.T) {
 	}
 	if strings.Contains(api(alice, "GET", base+"/"+accepted.ID, "").Body.String(), "lease_token") {
 		t.Fatal("lease leaked through API")
+	}
+
+	// Uploaded source is digest-verified, scanned through the same worker, and deleted afterward.
+	uploadArchive := archive(t, map[string]string{"app.py": string(sourceData)}, false)
+	digestBytes := sha256.Sum256(uploadArchive)
+	digest := hex.EncodeToString(digestBytes[:])
+	uploaded, err := store.EnqueueUpload(ctx, alice, repo.ID, "main", "project.zip", digest, uploadArchive)
+	if err != nil {
+		t.Fatal(err)
+	}
+	uploadWorker := Worker{Queue: store, Source: JobSource{}, Analyzer: fixedAnalyzer{}}
+	if worked, e := uploadWorker.RunOne(ctx); e != nil || !worked {
+		t.Fatalf("upload worker: %v %v", worked, e)
+	}
+	uploadResult, err := store.Get(ctx, alice, repo.ID, uploaded.ID)
+	if err != nil || uploadResult.Status != "completed" || uploadResult.SourceKind != "upload" || uploadResult.CommitSHA == nil || *uploadResult.CommitSHA != digest {
+		t.Fatalf("upload result: %+v %v", uploadResult, err)
+	}
+	var remaining int
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM public.scan_source_archives WHERE scan_id=$1::uuid`, uploaded.ID).Scan(&remaining); err != nil || remaining != 0 {
+		t.Fatalf("uploaded archive retained: %d %v", remaining, err)
 	}
 
 	// Publishing is all-or-nothing even if a later finding violates a DB constraint.

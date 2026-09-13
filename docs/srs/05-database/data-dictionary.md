@@ -3,7 +3,7 @@
 > **Project:** AuditorX  
 > **Status:** Draft
 
-**Implementation status (as of 2026-09-12):** Only §§4–6 (`Repository`, `RepositoryMember`, `Scan`) plus a new §7a (`ScanFinding`) describe tables that exist today, in `supabase/migrations/20260828073925_repository_membership.sql` and `supabase/migrations/20260828102015_durable_scan_jobs.sql`. Each of those sections is annotated with the real column list where it differs from the field names below. `User` (§2) and `Role` (§3) are not local tables — identity is Supabase Auth's `auth.users`. `Issue` (§7) as a stateful, editable entity and everything from §8 onward (`IssueStatusHistory`, `IssueNote`, `PriorityLabel`, `PriorityPrediction`, `PriorityDataset`, `PriorityModel`, `EvaluationRun`, `AIAnalysis`, `AIRepositorySummary`, `Report`, `AuditLog`) is planned/target design with no corresponding table. Content is retained as forward-looking scope.
+**Implementation status (as of 2026-09-13):** §§4–6 (`Repository`, `RepositoryMember`, `Scan`), §6a (`ScanSourceArchive`) and §7a (`ScanFinding`) describe tables that exist today. `User` (§2) and `Role` (§3) are not local tables — identity is Supabase Auth's `auth.users`. `Issue` (§7) as a stateful, editable entity and everything from §8 onward remains planned/target design.
 
 ## 1. Conventions
 
@@ -86,7 +86,7 @@ The composite primary key `(repository_id, user_id)` is implemented (not merely 
 
 ## 6. Scan — **[Implemented, as `scan_jobs`]**
 
-Real table: `public.scan_jobs`. Real column names differ from the planned ones below in several places (`requested_by` not `started_by`, `rules_version` not `rule_profile`, `finished_at` not `completed_at`), and several planned columns (`quality_score`, `score_version`, `score_calculated_at`, `severity_mapping_version`, `error_message`) do not exist. The implemented table also adds `attempts`, `lease_token`, `lease_expires_at`, and `scanner_version` for durable worker leasing, which are not in the planned list below.
+Real table: `public.scan_jobs`. It also includes `source_kind` (`github`/`upload`), nullable `source_name` and `source_digest`, plus `attempts`, `lease_token`, `lease_expires_at`, and `scanner_version` for durable worker leasing.
 
 | Field | Type | Constraint | Description | Status |
 |---|---|---|---|---|
@@ -112,6 +112,20 @@ Real table: `public.scan_jobs`. Real column names differ from the planned ones b
 | scanner_version | VARCHAR | Nullable | Scanner build/version that produced the result | Implemented (not in original design) |
 
 Only one `queued`/`running` job per repository is allowed at a time (`scan_jobs_one_active` partial unique index).
+
+## 6a. ScanSourceArchive — **[Implemented]**
+
+Real table: `public.scan_source_archives`. It temporarily stores a validated local ZIP/folder payload for a queued upload scan.
+
+| Field | Type | Constraint | Description |
+| --- | --- | --- | --- |
+| scan_id | UUID | PK, FK → `scan_jobs` | Upload scan |
+| repository_id | UUID | Composite FK with scan_id | Repository scope |
+| requested_by | UUID | FK → `auth.users` | Uploading user |
+| archive | BYTEA | 1–20 MiB, not client-readable | Temporary source ZIP |
+| created_at | TIMESTAMPTZ | Required | Upload time |
+
+RLS is enabled and forced. Owners/editors can insert and delete their scoped row, but authenticated clients receive no `archive` SELECT grant. The worker can read/delete and removes the archive on a terminal result.
 
 ---
 

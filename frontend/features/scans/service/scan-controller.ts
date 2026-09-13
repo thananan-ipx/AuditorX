@@ -7,7 +7,7 @@ export type ScanState = {
   jobs: Scan[];
   selected: Scan | null;
   findings: Finding[] | null;
-  action: "start" | "cancel" | null;
+  action: "start" | "upload" | "cancel" | null;
   error: unknown;
   notice: string;
 };
@@ -104,10 +104,11 @@ export class ScanController {
   }
 
   enqueue = () => this.mutate("start");
+  upload = (source: FormData) => this.mutate("upload", source);
   cancel = () => this.mutate("cancel");
-  private async mutate(action: "start" | "cancel") {
+  private async mutate(action: "start" | "upload" | "cancel", source?: FormData) {
     if (!this.alive || !this.canWrite || this.state.action || this.state.phase !== "ready") return;
-    if (action === "start" && (this.state.jobs.some(isActive) || (this.state.selected && isActive(this.state.selected)))) return;
+    if ((action === "start" || action === "upload") && (this.state.jobs.some(isActive) || (this.state.selected && isActive(this.state.selected)))) return;
     const selected = this.state.selected;
     if (action === "cancel" && (!selected || !isActive(selected))) return;
     const { signal, current } = this.begin();
@@ -115,17 +116,20 @@ export class ScanController {
     try {
       const job = action === "start"
         ? await this.api.start(this.repositoryID, this.branch, signal)
-        : await this.api.cancel(this.repositoryID, selected!.id, signal);
+        : action === "upload"
+          ? await this.api.upload(this.repositoryID, source!, signal)
+          : await this.api.cancel(this.repositoryID, selected!.id, signal);
       if (!current()) return;
       this.selectedID = job.id;
       this.publish({ action: null, phase: "loading", selected: null, findings: null,
         notice: action === "start" ? "Scan saved to the queue. Its current status is shown below."
+          : action === "upload" ? "Local source uploaded and saved to the scan queue."
           : "Cancellation saved. This scan can no longer publish results; its analyzer may take time to stop." });
       await this.refresh();
     } catch (error) {
       if (!current()) return;
       if (error instanceof ApiError && error.status === 409 && error.code === "SCAN_CONFLICT") {
-        if (action === "start") this.selectedID = undefined;
+        if (action === "start" || action === "upload") this.selectedID = undefined;
         this.publish({ action: null, notice: "The scan state changed in another request. The latest state is shown below." });
         await this.refresh();
       } else {

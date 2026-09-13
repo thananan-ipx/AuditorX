@@ -4,6 +4,8 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -55,6 +57,35 @@ func TestExtractSource(t *testing.T) {
 		t.Fatal("dependency files copied")
 	}
 }
+
+func TestExtractUploadedSourceAndDigest(t *testing.T) {
+	for name, files := range map[string]map[string]string{
+		"rootless": {"app.py": "print('safe')", "src/view.tsx": "export const View = () => <div />"},
+		"wrapped":  {"project/app.py": "print('safe')"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			data := archive(t, files, false)
+			root := t.TempDir()
+			if err := extractUploadedSource(data, root); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := os.Stat(filepath.Join(root, "app.py")); err != nil {
+				t.Fatal(err)
+			}
+			digestBytes := sha256.Sum256(data)
+			digest := hex.EncodeToString(digestBytes[:])
+			job := Job{SourceKind: "upload", SourceDigest: &digest, Archive: data}
+			if got, err := (JobSource{}).Fetch(context.Background(), job, t.TempDir()); err != nil || got != digest {
+				t.Fatalf("digest/source=%q/%v", got, err)
+			}
+			job.Archive = append([]byte(nil), data...)
+			job.Archive[len(job.Archive)-1] ^= 1
+			if _, err := (JobSource{}).Fetch(context.Background(), job, t.TempDir()); err == nil {
+				t.Fatal("tampered upload accepted")
+			}
+		})
+	}
+}
 func TestExtractRejectsUnsafeArchives(t *testing.T) {
 	for _, name := range []string{"../escape.py", "/absolute.py", "repo/../../escape.py", "repo/a\\b.py", "repo/C:evil.py", "repo/CON.py", "repo/dir./a.py"} {
 		t.Run(name, func(t *testing.T) {
@@ -93,6 +124,22 @@ func TestSemgrepParser(t *testing.T) {
 	for _, data := range [][]byte{[]byte(`{}`), []byte(`bad json`), encode("old", []any{}, nil), encode("1.175.0", []any{}, []any{"parse failure"})} {
 		if _, err := parseFindings(data, "baseline-v1"); err == nil {
 			t.Fatal("invalid result accepted")
+		}
+	}
+	partialParsing := map[string]any{
+		"code":  3,
+		"level": "warn",
+		"type":  []any{"PartialParsing", []any{map[string]any{"path": "view.tsx"}}},
+	}
+	if _, err := parseFindings(encode("1.175.0", []any{}, []any{partialParsing}), "baseline-v2"); err != nil {
+		t.Fatalf("warning-level partial parsing rejected: %v", err)
+	}
+	for _, diagnostic := range []any{
+		map[string]any{"code": 3, "level": "error", "type": []any{"PartialParsing"}},
+		map[string]any{"code": 3, "level": "warn", "type": []any{"OtherWarning"}},
+	} {
+		if _, err := parseFindings(encode("1.175.0", []any{}, []any{diagnostic}), "baseline-v2"); err == nil {
+			t.Fatal("non-recoverable scanner diagnostic accepted")
 		}
 	}
 	finding["path"] = "../secret.py"

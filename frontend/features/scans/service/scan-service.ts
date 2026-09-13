@@ -19,6 +19,9 @@ export const scanService = {
       method: "POST", body: JSON.stringify({ branch, rule_profile: "recommended" }), signal,
     });
   },
+  upload(repositoryID: string, source: FormData, signal?: AbortSignal) {
+    return apiClient<Scan>(`${base(repositoryID)}/upload`, { method: "POST", body: source, signal });
+  },
   cancel(repositoryID: string, scanID: string, signal?: AbortSignal) {
     return apiClient<Scan>(`${detail(repositoryID, scanID)}/cancel`, { method: "POST", signal });
   },

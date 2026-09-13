@@ -39,7 +39,9 @@ func (w Worker) RunOne(ctx context.Context) (bool, error) {
 		sha, fetchErr := w.Source.Fetch(scanCtx, job, directory)
 		if fetchErr != nil {
 			code = "SOURCE_UNAVAILABLE"
-		} else if !shaPattern.MatchString(sha) {
+		} else if job.SourceKind == "upload" && !uploadDigestPattern.MatchString(sha) {
+			code = "INVALID_SOURCE_DIGEST"
+		} else if job.SourceKind != "upload" && !shaPattern.MatchString(sha) {
 			code = "INVALID_COMMIT"
 		} else {
 			result, err = w.Analyzer.Analyze(scanCtx, directory, job.RulesVersion)

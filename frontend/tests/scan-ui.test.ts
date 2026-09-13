@@ -8,11 +8,11 @@ import type { Scan, Finding } from "../features/scans/types";
 import { ApiError } from "../lib/api-client";
 
 const repository = { id: "repo-1", owner: "owner", name: "project", branch: "main", status: "Connected" };
-const scan: Scan = { id: "scan-1", repository_id: repository.id, requested_by: "user-1", branch: "main", status: "completed", attempts: 1, commit_sha: "abc123", rules_version: "baseline-v1", scanner_version: "1.175.0", error_code: null, created_at: "2026-08-28T09:00:00Z", started_at: null, finished_at: null };
+const scan: Scan = { id: "scan-1", repository_id: repository.id, requested_by: "user-1", branch: "main", status: "completed", attempts: 1, commit_sha: "abc123", rules_version: "baseline-v1", scanner_version: "1.175.0", error_code: null, source_kind: "github", source_name: null, source_digest: null, created_at: "2026-08-28T09:00:00Z", started_at: null, finished_at: null };
 const finding: Finding = { fingerprint: "fp1", rule_id: "eval-rule", severity: "High", file: "src/app.py", line: 4, end_line: 8, message: "Avoid eval <script>alert(1)</script>" };
 const ready: ScanState = { phase: "ready", jobs: [scan], selected: scan, findings: [finding], action: null, error: null, notice: "" };
 function render(state: ScanState, canWrite = true) {
-  return renderToStaticMarkup(createElement(ScanWorkspace, { repository, state, canWrite, onStart() {}, onCancel() {}, onSelect() {}, onRefresh() {} }));
+  return renderToStaticMarkup(createElement(ScanWorkspace, { repository, state, canWrite, onStart() {}, onUpload() {}, onCancel() {}, onSelect() {}, onRefresh() {} }));
 }
 
 test("real completed results show file, line, rule, version and commit with escaped messages", () => {
@@ -26,6 +26,16 @@ test("real completed results show file, line, rule, version and commit with esca
   assert.doesNotMatch(html, /<script>|Code quality score|AI analysis|Predicted priority|Simulate scan/);
   assert.match(html, /aria-pressed="true"/);
   assert.match(html, /Latest 20 scans/);
+});
+
+test("owners can choose a local folder or ZIP and uploaded scan metadata is labeled", () => {
+  const uploaded = { ...scan, source_kind: "upload" as const, source_name: "project.zip", source_digest: "a".repeat(64), commit_sha: "a".repeat(64) };
+  const html = render({ ...ready, jobs: [uploaded], selected: uploaded });
+  assert.match(html, /Scan code from this computer/);
+  assert.match(html, /Choose folder/);
+  assert.match(html, /Choose ZIP/);
+  assert.match(html, /Local upload: project.zip/);
+  assert.match(html, /Digest/);
 });
 
 test("zero completed findings is distinct from no scans and does not imply safety", () => {
@@ -89,6 +99,6 @@ test("findings are paginated to 50 rows and all severity totals remain visible",
 });
 
 test("failure messages are bounded and unknown worker text is not reflected", () => {
-  for (const code of ["SOURCE_UNAVAILABLE", "INVALID_COMMIT", "SCANNER_FAILED", "SCAN_TIMEOUT", "ACCESS_REVOKED", "RETRY_EXHAUSTED"]) assert.ok(failureMessage(code).length > 30);
+  for (const code of ["SOURCE_UNAVAILABLE", "INVALID_COMMIT", "INVALID_SOURCE_DIGEST", "SCANNER_FAILED", "SCAN_TIMEOUT", "ACCESS_REVOKED", "RETRY_EXHAUSTED"]) assert.ok(failureMessage(code).length > 30);
   assert.doesNotMatch(failureMessage("secret SQL credentials"), /secret|SQL|credentials/);
 });

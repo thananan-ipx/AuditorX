@@ -23,11 +23,15 @@ type Job struct {
 	CommitSHA      *string    `json:"commit_sha"`
 	ScannerVersion *string    `json:"scanner_version"`
 	ErrorCode      *string    `json:"error_code"`
+	SourceKind     string     `json:"source_kind"`
+	SourceName     *string    `json:"source_name"`
+	SourceDigest   *string    `json:"source_digest"`
 	CreatedAt      time.Time  `json:"created_at"`
 	StartedAt      *time.Time `json:"started_at"`
 	FinishedAt     *time.Time `json:"finished_at"`
 	LeaseToken     string     `json:"-"`
 	RepositoryURL  string     `json:"-"`
+	Archive        []byte     `json:"-"`
 }
 
 type Finding struct {

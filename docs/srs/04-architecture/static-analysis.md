@@ -18,7 +18,9 @@ sections 4 ("selected rules"), 6 and 8 ("Rule set should be configurable by lang
 profile") below describe the target design, not the current behavior. Metrics/telemetry are
 disabled, no network config/cache is inherited from the host, and each run uses a fresh
 temporary directory that is cleaned up afterward. Source snippets from findings are not
-currently persisted. Section 9 ("Trigger AI Analysis") is not implemented — there is no AI
+currently persisted. Source may come from a fixed-host public GitHub download or an authenticated
+local folder/ZIP upload. Uploaded archives are RLS-protected, digest-verified at the worker boundary,
+and removed at terminal completion/cancellation. Section 9 ("Trigger AI Analysis") is not implemented — there is no AI
 engine in the codebase yet (see `ai-engine.md`).
 
 ---
