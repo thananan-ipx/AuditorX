@@ -1,30 +1,31 @@
 "use client";
-import { Typography } from "@/components/ui/typography";
 
+import { Code2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Code2, LockKeyhole } from "lucide-react";
+import { Typography } from "@/components/ui/typography";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { LoginForm } from "@/features/auth/components/login-form";
+import { LoginHero } from "@/features/auth/components/login-hero";
+import { APP_NAME } from "@/lib/constants";
 import { useLanguage } from "@/lib/i18n";
 
+/** Reuses ERP's two-column authentication layout with AuditorX branding and auth. */
 export function LoginCard({ next, initialStatus }: { next: string; initialStatus?: string }) {
   const { t } = useLanguage();
-
-  return (
-    <main className="relative grid min-h-screen place-items-center bg-[#0d1720] px-4 py-10 text-slate-950">
-      <div className="absolute right-4 top-4 sm:right-7 sm:top-7"><LanguageSwitcher inverse /></div>
-      <Card className="w-full max-w-md gap-0 rounded-3xl border border-white/10 bg-white p-7 shadow-2xl shadow-black/30 sm:p-9">
-        <div className="mb-8 flex items-center gap-3">
-          <div className="grid size-11 place-items-center rounded-xl bg-[#c9f060] text-[#0d1720]"><Code2 size={22} strokeWidth={2.6} /></div>
-          <div><Typography variant="card-title" as="p">AuditorX</Typography><p className="text-slate-500 type-overline">{t("Code Intelligence")}</p></div>
-        </div>
-        <div className="mb-6">
-          <div className="mb-3 grid size-10 place-items-center rounded-full bg-slate-100"><LockKeyhole size={18} /></div>
-          <Typography variant="page-title" as="h1">{t("Sign in to your workspace")}</Typography>
-          <p className="mt-2 text-slate-500 type-body-sm">{t("Use your email and password, or create an account.")}</p>
-        </div>
-        <LoginForm next={next} initialStatus={initialStatus} />
+  return <div className="flex min-h-svh flex-col bg-background">
+    <header className="flex justify-end px-4 pt-4 sm:px-8"><LanguageSwitcher /></header>
+    <main className="flex flex-1 items-center justify-center p-4 sm:p-8">
+      <Card className="grid w-full max-w-5xl gap-0 overflow-hidden rounded-2xl p-0 shadow-sm lg:min-h-175 lg:grid-cols-2">
+        <section className="flex items-center justify-center p-6 sm:p-12">
+          <div className="flex w-full max-w-sm flex-col gap-8">
+            <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-full bg-primary text-primary-foreground"><Code2 className="size-5" aria-hidden="true" /></span><Typography variant="card-title" as="p">{APP_NAME}</Typography></div>
+            <div><Typography variant="page-title">{t("Welcome to AuditorX")}</Typography><p className="mt-2 type-body-sm text-muted-foreground">{t("Sign in to your workspace")}</p></div>
+            <LoginForm next={next} initialStatus={initialStatus} />
+          </div>
+        </section>
+        <LoginHero />
       </Card>
     </main>
-  );
+    <footer className="flex flex-col items-center justify-between gap-2 px-6 py-4 type-caption text-muted-foreground sm:flex-row"><p>© {new Date().getFullYear()} {APP_NAME}</p><p>{t("Code intelligence workspace")}</p></footer>
+  </div>;
 }

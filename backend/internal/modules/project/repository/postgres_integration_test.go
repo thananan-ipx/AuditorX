@@ -65,6 +65,21 @@ func TestPostgresIntegration(t *testing.T) {
 	if created.CreatedBy != alice || created.AccessLevel != "owner" || created.Branch != "develop" {
 		t.Fatalf("unexpected repository: %+v", created)
 	}
+	directory := repository.NewPostgres(pool)
+	matches, err := directory.Search(ctx, alice, "ADAPTER")
+	if err != nil || len(matches) != 1 || matches[0].ID != created.ID {
+		t.Fatalf("owner search failed: %+v %v", matches, err)
+	}
+	matches, err = directory.Search(ctx, bob, "adapter")
+	if err != nil || len(matches) != 0 {
+		t.Fatal("search exposed another user's repository")
+	}
+	for _, literal := range []string{"%", "_", "' OR true --"} {
+		matches, err = directory.Search(ctx, alice, literal)
+		if err != nil || len(matches) != 0 {
+			t.Fatal("search query acted as a wildcard or SQL")
+		}
+	}
 	if _, err := svc.Get(bCtx, created.ID); !errors.Is(err, entity.ErrNotFound) {
 		t.Fatalf("cross-user read: %v", err)
 	}
@@ -111,11 +126,19 @@ func TestPostgresIntegration(t *testing.T) {
 	if err != nil || got.AccessLevel != "viewer" {
 		t.Fatalf("member access: %+v %v", got, err)
 	}
+	matches, err = repository.NewPostgres(pool).Search(ctx, viewer, "adapter")
+	if err != nil || len(matches) != 1 {
+		t.Fatal("viewer could not search their repository")
+	}
 	if _, err := pool.Exec(ctx, "DELETE FROM public.repository_members WHERE user_id=$1", viewer); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := svc.Get(vCtx, created.ID); !errors.Is(err, entity.ErrNotFound) {
 		t.Fatalf("revoked membership retained access: %v", err)
+	}
+	matches, err = repository.NewPostgres(pool).Search(ctx, viewer, "adapter")
+	if err != nil || len(matches) != 0 {
+		t.Fatal("revoked membership remained visible in search")
 	}
 
 	// Inject a membership write failure into a real transaction, then confirm rollback.

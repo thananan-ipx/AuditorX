@@ -22,6 +22,7 @@ see [the persistence API contract](repository-persistence.md) for its responses 
 | POST | `/api/v1/auth/sign-out` | Existing auth handler |
 | GET | `/api/v1/auth/me` | Existing auth handler |
 | GET | `/api/v1/capabilities` | Authenticated storage mode and availability flags, no-store; queue availability is not worker health |
+| GET | `/api/v1/search?q=...` | In postgres mode: authenticated, literal repository metadata search, 2–100 characters, maximum 5 accessible results, no-store |
 | GET | `/api/v1/repositories` | Prototype list |
 | GET | `/api/v1/repositories/{repositoryID}/dashboard` | Prototype dashboard |
 | POST | `/api/v1/repositories/{repositoryID}/scans` | Prototype acceptance only, no worker |

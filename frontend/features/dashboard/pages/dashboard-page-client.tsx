@@ -59,7 +59,7 @@ export default function DashboardPage({ repositoryID }: { repositoryID?: string 
   };
 
   return (
-    <main className="mx-auto max-w-[1540px] px-4 py-6 md:px-7 lg:px-9 lg:py-8">
+    <div className="min-w-0">
       {state.kind === "loading" ? <DashboardSkeleton /> : state.kind === "error"
         ? <WorkspaceError error={state.error} returnTo={repositoryID ? dashboardHref(repositoryID) : "/dashboard"} retry={() => { setState({ kind: "loading" }); setRevision((value) => value + 1); }} />
         : <>
@@ -76,7 +76,7 @@ export default function DashboardPage({ repositoryID }: { repositoryID?: string 
               <DashboardContent dashboard={state.dashboard} issues={state.issues} scanBusy={scanBusy} demo={state.capabilities.repository_storage === "prototype"} startScan={startScan} />
             </>}
         </>}
-    </main>
+    </div>
   );
 }
 

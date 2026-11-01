@@ -1,8 +1,10 @@
 import { apiClient } from "@/lib/api-client";
 
-type AuthResponse = { user: { id: string; email: string } } | null;
+export type AuthUser = { id: string; email: string };
+type AuthResponse = { user: AuthUser } | null;
 
 export const authService = {
+  me: (signal?: AbortSignal) => apiClient<{ user: AuthUser }>("/api/v1/auth/me", { signal, cache: "no-store" }),
   signIn: (email: FormDataEntryValue | null, password: FormDataEntryValue | null) =>
     apiClient<AuthResponse>("/api/v1/auth/sign-in", {
       method: "POST",

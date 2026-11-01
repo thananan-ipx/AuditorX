@@ -44,7 +44,7 @@ export default function RepositoriesPage() {
     setPage(next);
   }
 
-  return <main className="mx-auto max-w-[1540px] px-4 py-6 md:px-7 lg:px-9 lg:py-8">
+  return <div className="min-w-0">
     <div className="mb-7">
       <p className="mb-2 text-muted-foreground type-body-sm">{t("Workspace / Repositories")}</p>
       <Typography variant="page-title" as="h1">{t("Repositories")}</Typography>
@@ -81,7 +81,7 @@ export default function RepositoriesPage() {
       </section>
       {state.capabilities.repository_storage === "postgres" && <PagePagination className="mt-5" page={page} hasNext={state.repositories.length >= PAGE_SIZE && page < 10000} onPageChange={navigatePage} />}
     </>}
-  </main>;
+  </div>;
 }
 
 function CreateRepositoryForm() {

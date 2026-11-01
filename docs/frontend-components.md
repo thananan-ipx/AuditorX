@@ -6,10 +6,12 @@ The frontend uses shadcn/ui's New York components with Radix primitives and Tail
 
 - `frontend/components/ui`: shadcn primitives and the shared `Typography` primitive. The shadcn files come from the official `new-york-v4` registry, with imports resolved to the local aliases and type styles adapted to the application scale. Keep these generic and free of API calls and business rules.
 - `frontend/components/shared`: reusable application patterns built from those primitives: `FormField`, `Feedback`, `LoadingState`, `EmptyState`, `StatusBadge`, and `PagePagination`.
-- `frontend/components/layout`: application navigation and layout. Mobile navigation uses shadcn Sheet for keyboard focus, Escape, and dismissal.
+- `frontend/components/layout`: application navigation and layout. The ERP-style shadcn Sidebar supports desktop icon collapse and a mobile Sheet. `navigation.ts` supplies the sidebar, header and universal search destinations. See [ERP UI reuse](erp-ui-reuse.md).
 - `frontend/features/*/components`: domain behavior and composition. Import the common UI instead of copying markup or control styles.
 
 ## Usage
+
+`DashboardShell` owns the body layout: the inset clips its header to the rounded corners while preserving sticky positioning, and `page-content` supplies full-width content with 16px mobile / 24px desktop padding. Feature pages should use a neutral wrapper without another `main`, page-width cap, or outer padding; the SidebarInset already supplies the main landmark.
 
 ```tsx
 import { FormField } from "@/components/shared/form-field";
