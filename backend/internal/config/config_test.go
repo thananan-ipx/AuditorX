@@ -10,7 +10,7 @@ func TestLoadUsesDotEnvWithoutOverridingProcess(t *testing.T) {
 	t.Chdir(t.TempDir())
 	t.Setenv("PORT", "9090")
 	t.Setenv("REPOSITORY_STORAGE", "prototype")
-	contents := "PORT=8080\nSUPABASE_URL=https://project.supabase.co\nSUPABASE_PUBLISHABLE_KEY=sb_publishable_test\n"
+	contents := "PORT=8080\nDATABASE_URL=postgresql://localhost/auditorx\n"
 	if err := os.WriteFile(".env", []byte(contents), 0o600); err != nil {
 		t.Fatalf("write .env: %v", err)
 	}
@@ -26,15 +26,14 @@ func TestLoadUsesDotEnvWithoutOverridingProcess(t *testing.T) {
 func TestRepositoryStorageConfiguration(t *testing.T) {
 	t.Setenv("SCAN_QUEUE_ENABLED", "false")
 	t.Chdir(t.TempDir())
-	t.Setenv("SUPABASE_URL", "https://example.supabase.co")
-	t.Setenv("SUPABASE_PUBLISHABLE_KEY", "test-key")
-	t.Setenv("DATABASE_URL", "")
+	t.Setenv("DATABASE_URL", "postgresql://localhost/auditorx")
 	t.Setenv("REPOSITORY_STORAGE", "")
 	cfg, err := Load()
 	if err != nil || cfg.RepositoryStorage != "prototype" {
 		t.Fatalf("default: %+v %v", cfg, err)
 	}
 	t.Setenv("REPOSITORY_STORAGE", "postgres")
+	t.Setenv("DATABASE_URL", "")
 	if _, err := Load(); err == nil {
 		t.Fatal("postgres without database accepted")
 	}
@@ -50,8 +49,6 @@ func TestRepositoryStorageConfiguration(t *testing.T) {
 
 func TestScanQueueOptIn(t *testing.T) {
 	t.Chdir(t.TempDir())
-	t.Setenv("SUPABASE_URL", "https://example.supabase.co")
-	t.Setenv("SUPABASE_PUBLISHABLE_KEY", "test-key")
 	t.Setenv("DATABASE_URL", "postgresql://localhost/example")
 	t.Setenv("REPOSITORY_STORAGE", "prototype")
 	t.Setenv("SCAN_QUEUE_ENABLED", "")
@@ -74,11 +71,14 @@ func TestScanQueueOptIn(t *testing.T) {
 	}
 }
 
-func TestLoadRequiresSupabaseConfiguration(t *testing.T) {
+func TestLocalAccountsRequireDatabase(t *testing.T) {
 	t.Chdir(t.TempDir())
-	t.Setenv("SUPABASE_URL", "")
-	t.Setenv("SUPABASE_PUBLISHABLE_KEY", "")
+	t.Setenv("DATABASE_URL", "")
 	if _, err := Load(); err == nil {
-		t.Fatal("Load() expected missing Supabase configuration error")
+		t.Fatal("local accounts accepted without database")
+	}
+	t.Setenv("DATABASE_URL", "postgresql://localhost/auditorx")
+	if _, err := Load(); err != nil {
+		t.Fatalf("local configuration failed: %v", err)
 	}
 }

@@ -11,15 +11,13 @@ import (
 )
 
 type Config struct {
-	Port                   string
-	DatabaseURL            string
-	RepositoryStorage      string
-	ScanQueueEnabled       bool
-	SupabaseURL            string
-	SupabasePublishableKey string
-	FrontendURL            string
-	CookieSecure           bool
-	CookieDomain           string
+	Port              string
+	DatabaseURL       string
+	RepositoryStorage string
+	ScanQueueEnabled  bool
+	FrontendURL       string
+	CookieSecure      bool
+	CookieDomain      string
 }
 
 func Load() (Config, error) {
@@ -37,18 +35,16 @@ func Load() (Config, error) {
 	}
 
 	cfg := Config{
-		Port:                   valueOrDefault("PORT", "8080"),
-		DatabaseURL:            strings.TrimSpace(os.Getenv("DATABASE_URL")),
-		RepositoryStorage:      valueOrDefault("REPOSITORY_STORAGE", "prototype"),
-		ScanQueueEnabled:       scanQueueEnabled,
-		SupabaseURL:            strings.TrimRight(strings.TrimSpace(os.Getenv("SUPABASE_URL")), "/"),
-		SupabasePublishableKey: strings.TrimSpace(os.Getenv("SUPABASE_PUBLISHABLE_KEY")),
-		FrontendURL:            strings.TrimRight(valueOrDefault("FRONTEND_URL", "http://localhost:3000"), "/"),
-		CookieSecure:           cookieSecure,
-		CookieDomain:           strings.TrimSpace(os.Getenv("COOKIE_DOMAIN")),
+		Port:              valueOrDefault("PORT", "8080"),
+		DatabaseURL:       strings.TrimSpace(os.Getenv("DATABASE_URL")),
+		RepositoryStorage: valueOrDefault("REPOSITORY_STORAGE", "prototype"),
+		ScanQueueEnabled:  scanQueueEnabled,
+		FrontendURL:       strings.TrimRight(valueOrDefault("FRONTEND_URL", "http://localhost:3000"), "/"),
+		CookieSecure:      cookieSecure,
+		CookieDomain:      strings.TrimSpace(os.Getenv("COOKIE_DOMAIN")),
 	}
-	if cfg.SupabaseURL == "" || cfg.SupabasePublishableKey == "" {
-		return Config{}, errors.New("SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY are required")
+	if cfg.DatabaseURL == "" {
+		return Config{}, errors.New("DATABASE_URL is required for local accounts")
 	}
 	if cfg.RepositoryStorage != "prototype" && cfg.RepositoryStorage != "postgres" {
 		return Config{}, errors.New("REPOSITORY_STORAGE must be prototype or postgres")
@@ -59,6 +55,7 @@ func Load() (Config, error) {
 	if cfg.ScanQueueEnabled && cfg.RepositoryStorage != "postgres" {
 		return Config{}, errors.New("SCAN_QUEUE_ENABLED requires postgres repository storage")
 	}
+
 	return cfg, nil
 }
 

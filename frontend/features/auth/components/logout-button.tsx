@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@/components/ui/button";
 
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -14,5 +15,5 @@ export function LogoutButton() {
     router.refresh();
   }
 
-  return <button type="button" onClick={signOut} className="rounded-md p-2 text-slate-500 transition hover:bg-white/5 hover:text-white" aria-label={t("Sign out")}><LogOut size={16} /></button>;
+  return <Button variant="ghost" size="icon-sm" type="button" onClick={signOut} className="rounded-md p-2 text-slate-500 transition hover:bg-white/5 hover:text-white" aria-label={t("Sign out")}><LogOut size={16} /></Button>;
 }

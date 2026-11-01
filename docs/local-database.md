@@ -1,54 +1,89 @@
-# Local database in Docker
+# Local PostgreSQL in Docker
 
-AuditorX runs its development database as part of the local Supabase stack in Docker.
-The repository contains everything needed to recreate the database schema on another
-computer:
+AuditorX uses PostgreSQL 17 for accounts, sessions, repositories and scan storage.
+The API no longer requires a Supabase project, key, connection or network service.
 
-- `supabase/config.toml` configures the local services and PostgreSQL 17.
-- `supabase/migrations/*.sql` is the authoritative, ordered schema history.
-- `supabase/seed.sql` is applied after the migrations and intentionally contains no
-  personal or machine-local data.
-- `tools/database-tests/package-lock.json` pins Supabase CLI 2.116.0.
-
-Docker images and database volumes are not committed to Git. A new computer downloads
-the images and rebuilds the database from the committed files.
-
-## First start on a new computer
-
-Install Git, Docker Desktop, Node.js 24, and PowerShell 7.4 or newer. Clone the repository,
-start Docker Desktop, and run this from the repository root:
+## Start and inspect
 
 ```powershell
+docker compose up -d --build
+docker compose ps
+docker compose run --rm migrate status
+```
+
+Open `http://localhost:3000`. PostgreSQL is published only on `127.0.0.1:5433`,
+database `auditorx`. Compose waits for PostgreSQL, applies pending Goose migrations,
+then starts the API; the frontend waits for the API health check. PostgreSQL and
+the API restart automatically after a transient failure.
+
+```powershell
+pwsh ./scripts/dev-local.ps1 -SmokeTest
 pwsh ./scripts/database-local.ps1 start
+pwsh ./scripts/database-local.ps1 status
 ```
 
-The script installs the repository-pinned CLI when it is missing, starts the Supabase
-containers, applies every migration, and then applies `seed.sql`. The first run downloads
-Docker images and can take several minutes. Supabase Studio is available at
-`http://127.0.0.1:54323` after startup.
+## Persistence and migrations
 
-Useful commands:
+The `postgres_data` volume preserves data through restarts and `docker compose down`.
+Do not remove that volume to update a schema. Goose v3.28.0 (also used by ERP) is
+embedded in the migration executable, using Go 1.26 and a PostgreSQL advisory lock.
+
+Add schema changes as new numbered `backend/migrations/*.sql` files with
+`-- +goose Up` and `-- +goose Down`. Rebuild after adding a file:
 
 ```powershell
-# Show URLs and local service status
-pwsh ./scripts/database-local.ps1 status
-
-# Delete and recreate only the local database from migrations and seed.sql
-pwsh ./scripts/database-local.ps1 reset
-
-# Stop the local stack while preserving its Docker volume backup
-pwsh ./scripts/database-local.ps1 stop
+docker compose build migrate
+docker compose run --rm migrate up
+# Repeatable: only pending versions are applied.
+docker compose run --rm migrate status
+# Stop services and keep data.
+docker compose down
 ```
 
-To run the database together with the API, scan worker, and frontend, install the remaining
-project prerequisites and use `pwsh ./scripts/dev-local.ps1` instead.
+`docker compose run --rm migrate down` rolls back one migration and can remove
+accounts or data. It is not a restart command. Constraint rollbacks may reject
+incompatible rows and leave the schema unchanged via transaction rollback.
 
-## Data and secrets
+Migration 00006 adds local passwords and sessions without deleting existing UUIDs,
+repositories or memberships. The historical `auth` schema and `auth.uid()` helper
+remain as internal PostgreSQL names used by the existing RLS policies. They do not
+contact Supabase or require JWTs. Original SQL under `supabase/migrations` is kept
+only as frozen baseline history, with a parity test; it is not a running service.
 
-The current local volume can contain Auth users, password hashes, repository URLs, uploaded
-source, and scan results. Do not commit a dump of that volume, `.env` files, `supabase/.temp`,
-or `supabase/.branches`. Create local users through the app after rebuilding the stack.
+## Local credentials and roles
 
-If real development data must move between computers, make an encrypted backup outside Git
-and treat it as sensitive. Schema changes belong in a new versioned migration; never depend
-on manual Studio changes that are absent from `supabase/migrations`.
+Development defaults:
+
+| Role | Username | Password |
+| --- | --- | --- |
+| Database administrator (migrations) | `postgres` | `auditorx-local-admin` |
+| API database login | `auditorx_api` | `auditorx-local-api` |
+
+These are database credentials; website users create separate accounts on the Login
+page. See [Local authentication](local-auth.md).
+
+Override `AUDITORX_DB_PASSWORD`, `AUDITORX_DB_APP_PASSWORD` and `AUDITORX_DB_PORT` in
+the root `.env` before creating a volume. Use URL-safe password values because
+Compose also embeds them in connection URLs. Changing `.env` after initialization
+does not rotate an existing PostgreSQL password.
+
+Only the migrator uses the administrator role. The API is `NOSUPERUSER`,
+`NOBYPASSRLS` and `NOINHERIT`; repository operations explicitly assume
+`authenticated` with a transaction-local verified user ID. Auth credentials and
+sessions remain in the private `auth` schema and are unavailable to that role.
+The scan worker is separately configured; the scan queue stays off by default.
+
+## Verification
+
+```powershell
+# Uses a disposable PostgreSQL container and separate network, never the app volume.
+pwsh ./scripts/test-goose.ps1
+# RLS and Go adapter tests use an in-memory PostgreSQL-compatible engine.
+cd tools/database-tests
+npm ci
+npm test
+```
+
+Database volumes can contain password hashes, session hashes and uploaded code.
+Keep dumps, `.env` files and `.local` credentials outside Git. Back up local data
+before moving to another machine; a new volume recreates the schema, not the users.

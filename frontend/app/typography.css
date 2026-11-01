@@ -1,0 +1,124 @@
+/* AuditorX type scale. All sizes use rem so browser text preferences still apply. */
+:root {
+  --type-page-size: 1.75rem;
+  --type-section-size: 1.375rem;
+  --type-card-size: 1.125rem;
+  --type-body-size: 1rem;
+  --type-ui-size: 0.875rem;
+  --type-caption-size: 0.75rem;
+  --type-code-size: 0.8125rem;
+  --type-metric-size: 2rem;
+  --type-metric-sm-size: 1.5rem;
+  --type-heading-leading: 1.5;
+  --type-body-leading: 1.75;
+  --type-ui-leading: 1.65;
+}
+
+@media (min-width: 48rem) {
+  :root {
+    --type-page-size: 2rem;
+    --type-section-size: 1.5rem;
+  }
+}
+
+@theme {
+  --font-mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.65;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.65;
+  --text-base: 1rem;
+  --text-base--line-height: 1.75;
+}
+
+@utility type-page-title {
+  font-size: var(--type-page-size);
+  font-weight: 700;
+  line-height: var(--type-heading-leading);
+  letter-spacing: normal;
+  overflow-wrap: anywhere;
+}
+
+@utility type-section-title {
+  font-size: var(--type-section-size);
+  font-weight: 600;
+  line-height: var(--type-heading-leading);
+  letter-spacing: normal;
+  overflow-wrap: anywhere;
+}
+
+@utility type-card-title {
+  font-size: var(--type-card-size);
+  font-weight: 600;
+  line-height: var(--type-heading-leading);
+  letter-spacing: normal;
+  overflow-wrap: anywhere;
+}
+
+@utility type-body {
+  font-size: var(--type-body-size);
+  font-weight: 400;
+  line-height: var(--type-body-leading);
+  letter-spacing: normal;
+}
+
+@utility type-body-sm {
+  font-size: var(--type-ui-size);
+  font-weight: 400;
+  line-height: var(--type-ui-leading);
+  letter-spacing: normal;
+}
+
+@utility type-label {
+  font-size: var(--type-ui-size);
+  font-weight: 500;
+  line-height: var(--type-ui-leading);
+  letter-spacing: normal;
+}
+
+@utility type-control {
+  font-size: var(--type-ui-size);
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: normal;
+}
+
+@utility type-caption {
+  font-size: var(--type-caption-size);
+  font-weight: 400;
+  line-height: var(--type-ui-leading);
+  letter-spacing: normal;
+}
+
+@utility type-overline {
+  font-size: var(--type-caption-size);
+  font-weight: 600;
+  line-height: var(--type-ui-leading);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+@utility type-code {
+  font-family: var(--font-mono);
+  font-size: var(--type-code-size);
+  font-weight: 400;
+  line-height: var(--type-ui-leading);
+  letter-spacing: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+@utility type-metric {
+  font-size: var(--type-metric-size);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+@utility type-metric-sm {
+  font-size: var(--type-metric-sm-size);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: normal;
+  font-variant-numeric: tabular-nums;
+}

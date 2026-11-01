@@ -45,7 +45,7 @@ func TestAuthenticateRejectsEmptyVerifiedIdentity(t *testing.T) {
 		t.Fatal("empty identity accepted")
 	}
 }
-func (r testRepository) SignUp(context.Context, string, string, string) (entity.Session, error) {
+func (r testRepository) SignUp(context.Context, string, string) (entity.Session, error) {
 	return r.session, nil
 }
 func (r testRepository) Refresh(context.Context, string) (entity.Session, error) {
@@ -57,7 +57,7 @@ func (r testRepository) User(context.Context, string) (entity.User, error) {
 func (r testRepository) SignOut(context.Context, string) error { return nil }
 
 func TestSignInSetsProtectedCookieWithoutReturningTokens(t *testing.T) {
-	repo := testRepository{session: entity.Session{AccessToken: "secret-access", RefreshToken: "secret-refresh", User: entity.User{ID: "user-1", Email: "test@example.com"}}}
+	repo := testRepository{session: entity.Session{AccessToken: "secret-access", User: entity.User{ID: "user-1", Email: "test@example.com"}}}
 	handler := NewHandler(service.New(repo), "http://localhost:3000", false, "")
 	request := httptest.NewRequest(http.MethodPost, "/api/v1/auth/sign-in", strings.NewReader(`{"email":"test@example.com","password":"password123"}`))
 	recorder := httptest.NewRecorder()

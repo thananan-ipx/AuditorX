@@ -13,8 +13,8 @@ func New(repo repository.UserRepository) *UserService { return &UserService{repo
 func (s *UserService) SignIn(ctx context.Context, email, password string) (entity.Session, error) {
 	return s.repository.SignIn(ctx, email, password)
 }
-func (s *UserService) SignUp(ctx context.Context, email, password, redirectTo string) (entity.Session, error) {
-	return s.repository.SignUp(ctx, email, password, redirectTo)
+func (s *UserService) SignUp(ctx context.Context, email, password string) (entity.Session, error) {
+	return s.repository.SignUp(ctx, email, password)
 }
 func (s *UserService) Refresh(ctx context.Context, refreshToken string) (entity.Session, error) {
 	return s.repository.Refresh(ctx, refreshToken)

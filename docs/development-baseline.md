@@ -17,7 +17,10 @@ Snapshot: 2026-08-28. This records the runnable implementation, not all planned 
 
 ## Verification
 
-Requirements: Node.js 24, npm 11, Go 1.25.x and PowerShell (7+ on Linux).
+Requirements: Node.js 24, npm 11, Go 1.26.x and PowerShell (7+ on Linux).
+Current Docker startup and authentication use standalone PostgreSQL and Goose;
+see [Local database](local-database.md) and [Local authentication](local-auth.md).
+References to Supabase stack verification below describe the earlier implementation.
 Install dependencies with `npm ci` in both `frontend/` and `tools/database-tests/`, then run from the repository root:
 
 ```powershell

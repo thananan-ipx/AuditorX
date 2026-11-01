@@ -1,19 +1,60 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: auditorx
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${AUDITORX_DB_PASSWORD:-auditorx-local-admin}
+      AUDITORX_DB_APP_PASSWORD: ${AUDITORX_DB_APP_PASSWORD:-auditorx-local-api}
+    ports:
+      - "127.0.0.1:${AUDITORX_DB_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/docker/postgres-init.sh:/docker-entrypoint-initdb.d/00-app-role.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auditorx"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+    entrypoint: ["/auditorx-migrate"]
+    command: ["up"]
+    environment:
+      DATABASE_URL: postgres://postgres:${AUDITORX_DB_PASSWORD:-auditorx-local-admin}@postgres:5432/auditorx?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   api:
+    restart: unless-stopped
     build:
       context: ./backend
       dockerfile: docker/Dockerfile
     environment:
-      DATABASE_URL: ${DATABASE_URL:-}
-      REPOSITORY_STORAGE: ${REPOSITORY_STORAGE:-prototype}
+      DATABASE_URL: postgres://auditorx_api:${AUDITORX_DB_APP_PASSWORD:-auditorx-local-api}@postgres:5432/auditorx?sslmode=disable
+      REPOSITORY_STORAGE: postgres
       SCAN_QUEUE_ENABLED: ${SCAN_QUEUE_ENABLED:-false}
-      SUPABASE_URL: ${SUPABASE_URL}
-      SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
     ports:
       - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
 
   web:
     build:
@@ -25,4 +66,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

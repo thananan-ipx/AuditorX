@@ -2,6 +2,17 @@
 
 > AI-Powered Source Code Quality Auditor
 
+## Local development
+
+```powershell
+docker compose up -d --build
+docker compose run --rm migrate status
+```
+
+เปิดเว็บที่ `http://localhost:3000` โดย PostgreSQL เก็บข้อมูลใน Docker volume
+และ Goose จะรัน migration ก่อนเริ่ม API อัตโนมัติ บัญชีผู้ใช้และ session เก็บใน PostgreSQL
+โดยไม่ต้องใช้ Supabase ดูรายละเอียดที่ [Local database](docs/local-database.md) และ [Local authentication](docs/local-auth.md)
+
 AuditorX เป็นระบบตรวจสอบและวิเคราะห์คุณภาพซอร์สโค้ดด้วยปัญญาประดิษฐ์ (AI-Powered Source Code Quality Auditor) ที่ถูกออกแบบมาเพื่อช่วยนักพัฒนาและองค์กรในการยกระดับคุณภาพของซอฟต์แวร์ โดยผสานการทำงานระหว่าง **Static Code Analysis** และ **Large Language Models (LLMs)**
 
 ระบบมีเป้าหมายในการตรวจจับปัญหาด้านคุณภาพของซอร์สโค้ด พร้อมอธิบายสาเหตุ วิเคราะห์ผลกระทบ และเสนอแนวทางการปรับปรุงให้สอดคล้องกับหลักการ Software Engineering และ Coding Standards ขององค์กร
@@ -168,16 +179,15 @@ Version Control
 
 ## Local database (Docker)
 
-The local Supabase/PostgreSQL database is reproducible from the files committed under
-`supabase/`. On a new computer, install Docker Desktop, Node.js 24, and PowerShell 7.4+, then run:
+The PostgreSQL database, local accounts and sessions are reproducible through
+Docker Compose and the embedded Goose history in `backend/migrations`.
 
 ```powershell
 pwsh ./scripts/database-local.ps1 start
 ```
 
-This downloads the pinned local tooling when needed and creates the database from the
-versioned migrations and safe seed file. See [Local database in Docker](docs/local-database.md)
-for reset, stop, data-backup, and secret-handling details.
+See [Local database in Docker](docs/local-database.md) and
+[Local authentication](docs/local-auth.md) for startup, migrations and persistence.
 
 Future Prototype
 
@@ -220,23 +230,23 @@ Prototype for Academic Project.
 The first runnable prototype includes a responsive dashboard, shadcn/ui-style
 components, and a Go REST API with representative AuditorX scan data.
 
-Requirements: Node.js 24+, npm 11+, and Go 1.25+.
+Requirements: Docker Desktop, Node.js 24+, npm 11+, and Go 1.26+.
 
-Start the API:
+Start the local database first with `docker compose up -d --build migrate`, then run the API:
 
 ```powershell
 cd backend
 Copy-Item .env.example .env
-# Edit .env with your Supabase project URL, publishable key, and database URL.
+# .env.example points to the local Docker PostgreSQL database.
 go run ./cmd/api
 ```
 
 The API loads `backend/.env` automatically for local development without
 overriding variables already set by the operating system or deployment. Keep
 the real database password only in the ignored local `.env` file or deployment
-secret store. Special characters in the password must be URL-encoded. Without
-`DATABASE_URL`, the API starts in prototype-data mode and reports the database
-as `not_configured` from `/health`.
+secret store. Special characters in the password must be URL-encoded.
+`DATABASE_URL` is required for local accounts; `/health` reports whether the
+connection is available. Use the Login page to create a website account.
 
 Backend code is organized by domain module. Each module owns its HTTP delivery,
 service, repository, and entity layers under `backend/internal/modules`.

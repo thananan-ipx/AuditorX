@@ -12,12 +12,15 @@ export async function database() {
     await db.exec(`
       CREATE ROLE anon NOLOGIN;
       CREATE ROLE authenticated NOLOGIN NOBYPASSRLS;
+      CREATE ROLE auditorx_api NOLOGIN NOINHERIT NOBYPASSRLS;
+      GRANT authenticated TO auditorx_api;
       CREATE SCHEMA auth;
       CREATE TABLE auth.users (id uuid PRIMARY KEY);
       CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
         SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
       $$;
       GRANT USAGE ON SCHEMA auth, public TO authenticated;
+      GRANT USAGE ON SCHEMA auth TO auditorx_api;
       GRANT EXECUTE ON FUNCTION auth.uid() TO authenticated;
       INSERT INTO auth.users VALUES ('${alice}'), ('${bob}'), ('${viewer}');
       CREATE TABLE public.auditorx_test_marker (id text PRIMARY KEY);
@@ -31,6 +34,8 @@ export async function database() {
     await db.exec(rulesMigration);
     const uploadMigration = await readFile(new URL('../../supabase/migrations/20260912152408_add_uploaded_scan_sources.sql', import.meta.url), 'utf8');
     await db.exec(uploadMigration);
+    const localAuth = await readFile(new URL('../../backend/migrations/00006_local_auth.sql', import.meta.url), 'utf8');
+    await db.exec(localAuth.split('-- +goose Up')[1].split('-- +goose Down')[0]);
     return db;
   } catch (err) {
     await db.close();

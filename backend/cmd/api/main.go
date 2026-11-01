@@ -47,7 +47,7 @@ func main() {
 	}
 	appLogger.Info("repository storage selected", "mode", cfg.RepositoryStorage)
 
-	userModule, err := user.NewModule(cfg)
+	userModule, err := user.NewModule(cfg, databasePool)
 	if err != nil {
 		appLogger.Error("user module startup failed", "error", err)
 		os.Exit(1)

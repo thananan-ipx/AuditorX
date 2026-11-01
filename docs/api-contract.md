@@ -1,5 +1,11 @@
 # Current API contract
 
+**Authentication update (2026-11-01):** Website accounts and opaque sessions now
+use local PostgreSQL. Supabase Auth is no longer required. Paths remain unchanged;
+signup creates a usable session immediately, and refresh rotates the current opaque
+cookie token. See [Local authentication](local-auth.md). Docker Compose now uses
+`REPOSITORY_STORAGE=postgres` by default.
+
 Snapshot: 2026-08-28. Routes below exist in the Go implementation. This document reconciles
 the prototype route names without silently renaming working endpoints or claiming the SRS is complete.
 

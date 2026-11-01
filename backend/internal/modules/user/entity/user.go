@@ -6,8 +6,7 @@ type User struct {
 }
 
 type Session struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int    `json:"expires_in"`
-	User         User   `json:"user"`
+	AccessToken string `json:"access_token"`
+	ExpiresIn   int    `json:"expires_in"`
+	User        User   `json:"user"`
 }

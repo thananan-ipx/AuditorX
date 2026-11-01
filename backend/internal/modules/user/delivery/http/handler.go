@@ -1,12 +1,13 @@
 package http
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/IProgressX/auditor-x/backend/internal/modules/user/entity"
 	"github.com/IProgressX/auditor-x/backend/internal/modules/user/repository"
@@ -40,7 +41,7 @@ func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 	session, err := h.service.SignIn(r.Context(), input.Email, input.Password)
 	if err != nil {
-		writeAuthError(w, err, http.StatusUnauthorized)
+		writeAuthError(w, err)
 		return
 	}
 	h.setSessionCookie(w, session)
@@ -52,30 +53,26 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	redirectTo := h.frontendURL + "/login?status=Email+confirmed.+You+can+sign+in+now."
-	session, err := h.service.SignUp(r.Context(), input.Email, input.Password, redirectTo)
+	session, err := h.service.SignUp(r.Context(), input.Email, input.Password)
 	if err != nil {
-		writeAuthError(w, err, http.StatusBadRequest)
+		writeAuthError(w, err)
 		return
 	}
-	requiresConfirmation := session.AccessToken == ""
-	if !requiresConfirmation {
-		h.setSessionCookie(w, session)
-	}
-	response.JSON(w, http.StatusCreated, map[string]any{"data": map[string]any{"user": session.User, "requires_email_confirmation": requiresConfirmation}})
+	h.setSessionCookie(w, session)
+	response.JSON(w, http.StatusCreated, map[string]any{"data": map[string]any{"user": session.User}})
 }
 
 func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	stored, err := readSessionCookie(r)
-	if err != nil || stored.RefreshToken == "" {
+	if err != nil || stored.AccessToken == "" {
 		h.clearSessionCookie(w)
 		response.Error(w, http.StatusUnauthorized, "AUTH_REQUIRED", "A valid session is required.")
 		return
 	}
-	session, err := h.service.Refresh(r.Context(), stored.RefreshToken)
+	session, err := h.service.Refresh(r.Context(), stored.AccessToken)
 	if err != nil {
 		h.clearSessionCookie(w)
-		writeAuthError(w, err, http.StatusUnauthorized)
+		writeAuthError(w, err)
 		return
 	}
 	h.setSessionCookie(w, session)
@@ -85,7 +82,10 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) SignOut(w http.ResponseWriter, r *http.Request) {
 	stored, _ := readSessionCookie(r)
 	if stored.AccessToken != "" {
-		_ = h.service.SignOut(r.Context(), stored.AccessToken)
+		if err := h.service.SignOut(r.Context(), stored.AccessToken); err != nil {
+			writeAuthError(w, err)
+			return
+		}
 	}
 	h.clearSessionCookie(w)
 	w.WriteHeader(http.StatusNoContent)
@@ -108,8 +108,7 @@ func (h *Handler) Authenticate(w http.ResponseWriter, r *http.Request) bool {
 		response.Error(w, http.StatusUnauthorized, "INVALID_SESSION", "A verified user is required.")
 		return false
 	}
-	// Preserve the existing middleware contract while passing verified identity downstream.
-	// Never use the User object supplied in the unsigned session cookie.
+	// Pass only the identity resolved from the server-side session downstream.
 	*r = *r.WithContext(identity.WithUserID(r.Context(), user.ID))
 	return true
 }
@@ -121,27 +120,17 @@ func (h *Handler) authenticate(w http.ResponseWriter, r *http.Request) (entity.U
 		return entity.User{}, false
 	}
 	user, err := h.service.User(r.Context(), stored.AccessToken)
-	if err == nil {
-		return user, true
-	}
-	if stored.RefreshToken == "" {
-		h.clearSessionCookie(w)
-		response.Error(w, http.StatusUnauthorized, "SESSION_EXPIRED", "The session has expired.")
-		return entity.User{}, false
-	}
-	refreshed, refreshErr := h.service.Refresh(r.Context(), stored.RefreshToken)
-	if refreshErr != nil {
-		h.clearSessionCookie(w)
-		response.Error(w, http.StatusUnauthorized, "SESSION_EXPIRED", "The session has expired.")
-		return entity.User{}, false
-	}
-	h.setSessionCookie(w, refreshed)
-	if refreshed.User.ID != "" {
-		return refreshed.User, true
-	}
-	user, err = h.service.User(r.Context(), refreshed.AccessToken)
 	if err != nil {
-		response.Error(w, http.StatusUnauthorized, "INVALID_SESSION", "The refreshed session is invalid.")
+		var authError *repository.AuthError
+		if errors.As(err, &authError) && authError.Status == http.StatusUnauthorized {
+			h.clearSessionCookie(w)
+		}
+		writeAuthError(w, err)
+		return entity.User{}, false
+	}
+	if user.ID == "" {
+		h.clearSessionCookie(w)
+		response.Error(w, http.StatusUnauthorized, "INVALID_SESSION", "A verified user is required.")
 		return entity.User{}, false
 	}
 	return user, true
@@ -149,24 +138,30 @@ func (h *Handler) authenticate(w http.ResponseWriter, r *http.Request) (entity.U
 
 func decodeCredentials(w http.ResponseWriter, r *http.Request) (credentials, bool) {
 	var input credentials
-	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&input); err != nil {
 		response.Error(w, http.StatusBadRequest, "INVALID_JSON", "Email and password are required.")
 		return input, false
 	}
+	if err := decoder.Decode(new(any)); err != io.EOF {
+		response.Error(w, http.StatusBadRequest, "INVALID_JSON", "Send one JSON credentials object.")
+		return input, false
+	}
 	input.Email = strings.TrimSpace(input.Email)
-	if input.Email == "" || len(input.Password) < 8 {
-		response.Error(w, http.StatusBadRequest, "INVALID_CREDENTIALS", "Enter a valid email and a password of at least 8 characters.")
+	if input.Email == "" || len(input.Email) > 254 || utf8.RuneCountInString(input.Password) < 8 || utf8.RuneCountInString(input.Password) > 128 || len(input.Password) > 512 {
+		response.Error(w, http.StatusBadRequest, "INVALID_CREDENTIALS", "Enter a valid email and a password between 8 and 128 characters.")
 		return input, false
 	}
 	return input, true
 }
 
 func (h *Handler) setSessionCookie(w http.ResponseWriter, session entity.Session) {
-	payload, _ := json.Marshal(session)
-	maxAge := 30 * 24 * 60 * 60
-	http.SetCookie(w, &http.Cookie{Name: sessionCookieName, Value: base64.RawURLEncoding.EncodeToString(payload), Path: "/", Domain: h.cookieDomain, MaxAge: maxAge, Expires: time.Now().Add(time.Duration(maxAge) * time.Second), HttpOnly: true, Secure: h.cookieSecure, SameSite: http.SameSiteLaxMode})
+	maxAge := session.ExpiresIn
+	if maxAge <= 0 {
+		maxAge = 30 * 24 * 60 * 60
+	}
+	http.SetCookie(w, &http.Cookie{Name: sessionCookieName, Value: session.AccessToken, Path: "/", Domain: h.cookieDomain, MaxAge: maxAge, Expires: time.Now().Add(time.Duration(maxAge) * time.Second), HttpOnly: true, Secure: h.cookieSecure, SameSite: http.SameSiteLaxMode})
 }
 
 func (h *Handler) clearSessionCookie(w http.ResponseWriter) {
@@ -179,24 +174,18 @@ func readSessionCookie(r *http.Request) (entity.Session, error) {
 	if err != nil {
 		return session, err
 	}
-	payload, err := base64.RawURLEncoding.DecodeString(cookie.Value)
-	if err != nil {
-		return session, err
+	if cookie.Value == "" || len(cookie.Value) > 256 {
+		return session, errors.New("invalid session token")
 	}
-	if err := json.Unmarshal(payload, &session); err != nil {
-		return session, err
-	}
-	if session.AccessToken == "" {
-		return session, errors.New("missing access token")
-	}
+	session.AccessToken = cookie.Value
 	return session, nil
 }
 
-func writeAuthError(w http.ResponseWriter, err error, fallbackStatus int) {
-	var provider *repository.ProviderError
+func writeAuthError(w http.ResponseWriter, err error) {
+	var provider *repository.AuthError
 	if errors.As(err, &provider) {
-		response.Error(w, fallbackStatus, "AUTH_FAILED", provider.Message)
+		response.Error(w, provider.Status, "AUTH_FAILED", provider.Message)
 		return
 	}
-	response.Error(w, http.StatusBadGateway, "AUTH_PROVIDER_ERROR", "The authentication provider is unavailable.")
+	response.Error(w, http.StatusServiceUnavailable, "AUTH_STORE_UNAVAILABLE", "The account store is unavailable. Please try again.")
 }

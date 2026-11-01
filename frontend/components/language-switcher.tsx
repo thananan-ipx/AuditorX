@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@/components/ui/button";
 
 import { Languages } from "lucide-react";
 import { useLanguage, type Locale } from "@/lib/i18n";
@@ -15,7 +16,9 @@ export function LanguageSwitcher({ inverse = false }: { inverse?: boolean }) {
     >
       <Languages size={15} className={cn("ml-1", inverse ? "text-slate-400" : "text-slate-500")} aria-hidden="true" />
       {(["th", "en"] as Locale[]).map((value) => (
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           key={value}
           type="button"
           lang={value}
@@ -23,14 +26,14 @@ export function LanguageSwitcher({ inverse = false }: { inverse?: boolean }) {
           aria-pressed={locale === value}
           onClick={() => setLocale(value)}
           className={cn(
-            "rounded-md px-2 py-1 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9bc53d]",
+            "h-7 rounded-md px-2 py-1 font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9bc53d] type-caption",
             locale === value
               ? inverse ? "bg-[#c9f060] text-[#0d1720]" : "bg-[#20332a] text-white"
               : inverse ? "text-slate-300 hover:bg-white/10" : "text-slate-500 hover:bg-slate-100",
           )}
         >
           {value === "th" ? "ไทย" : "EN"}
-        </button>
+        </Button>
       ))}
     </div>
   );

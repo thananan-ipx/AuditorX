@@ -1,6 +1,6 @@
 import { apiClient } from "@/lib/api-client";
 
-type AuthResponse = { requires_email_confirmation?: boolean } | null;
+type AuthResponse = { user: { id: string; email: string } } | null;
 
 export const authService = {
   signIn: (email: FormDataEntryValue | null, password: FormDataEntryValue | null) =>
