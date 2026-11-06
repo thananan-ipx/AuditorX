@@ -40,6 +40,7 @@ type Handler struct {
 var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
 func (h Handler) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /api/v1/local-projects", h.ListLocalProjects)
 	mux.HandleFunc("GET /api/v1/repositories/{repositoryID}/scans/{scanID}/predictions", h.PredictionStatus)
 	mux.HandleFunc("POST /api/v1/repositories/{repositoryID}/scans/{scanID}/predictions/retry", h.RetryPrediction)
 	mux.HandleFunc("POST /api/v1/repositories/{repositoryID}/scans/{scanID}/predictions", h.Predict)

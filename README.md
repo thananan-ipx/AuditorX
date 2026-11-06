@@ -2,6 +2,8 @@
 
 > AI-Powered Source Code Quality Auditor
 
+สำหรับอาจารย์: [จุดเริ่มตรวจโค้ด Python/Go/Frontend พร้อมข้อมูลและวิธีเทรนซ้ำ](docs/instructor-review.md)
+
 ## Local development
 
 GitHub sign-in and selected public/private repository import are available after

@@ -1,0 +1,244 @@
+{
+  "experiment": "lecture_decision_tree_v2",
+  "dataset_kind": "simulated_source_lab",
+  "human_ground_truth": false,
+  "input_sha256": "b292a2abffa50235c9777eb3b04dc89562f9dadb045a7a8c5d0ad2feac383226",
+  "scan_ids": [
+    "1bd9fa83-605e-4463-ae8f-05c20f637b06",
+    "d323821f-2669-40d0-92fe-e5c2622e57f2"
+  ],
+  "source_revisions": [
+    "4ca932ce2d2a438f5c8b924bd1dffbb6eab040cc04c86eb153fa19e5680947ad",
+    "de247e47abd7e22c006fb4cbca83dccc115e918914480443cc38c628f320320d"
+  ],
+  "sklearn_version": "1.7.2",
+  "features": [
+    "severity",
+    "rule_family",
+    "category",
+    "language",
+    "file_type",
+    "rule_count_in_scan",
+    "repository_criticality",
+    "exposure",
+    "impact"
+  ],
+  "additional_input_sha256": "54cbdf4f85301e9871df02b9529f3b5af2f5f3388fa2c12b7b32a45320abca86",
+  "additional_training_rows": 3,
+  "split_families": {
+    "train": [
+      "html",
+      "ownership",
+      "project:inventory-card",
+      "public-secret",
+      "redirect",
+      "sql",
+      "status"
+    ],
+    "validation": [
+      "credentials",
+      "logging",
+      "shell"
+    ],
+    "test": [
+      "cache",
+      "client-boundary",
+      "eval"
+    ]
+  },
+  "split_rows": {
+    "train": 9,
+    "validation": 3,
+    "test": 3
+  },
+  "primary_model": "decision_tree",
+  "selected_max_depth": 1,
+  "tree_validation_macro_f1": {
+    "1": 0.5555555555555555,
+    "2": 0.5555555555555555,
+    "3": 0.5555555555555555
+  },
+  "forest_validation_macro_f1": 0.16666666666666666,
+  "confusion_matrix_labels": [
+    "High",
+    "Medium",
+    "Low"
+  ],
+  "test_results": {
+    "severity_baseline": {
+      "accuracy": 0.3333333333333333,
+      "macro_f1": 0.3333333333333333,
+      "confusion_matrix": [
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0
+        ]
+      ],
+      "classification_report": {
+        "High": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 1.0
+        },
+        "Medium": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 1.0
+        },
+        "Low": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 1.0
+        },
+        "accuracy": 0.3333333333333333,
+        "macro avg": {
+          "precision": 0.3333333333333333,
+          "recall": 0.3333333333333333,
+          "f1-score": 0.3333333333333333,
+          "support": 3.0
+        },
+        "weighted avg": {
+          "precision": 0.3333333333333333,
+          "recall": 0.3333333333333333,
+          "f1-score": 0.3333333333333333,
+          "support": 3.0
+        }
+      }
+    },
+    "decision_tree": {
+      "accuracy": 0.3333333333333333,
+      "macro_f1": 0.2222222222222222,
+      "confusion_matrix": [
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ]
+      ],
+      "classification_report": {
+        "High": {
+          "precision": 0.5,
+          "recall": 1.0,
+          "f1-score": 0.6666666666666666,
+          "support": 1.0
+        },
+        "Medium": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 1.0
+        },
+        "Low": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 1.0
+        },
+        "accuracy": 0.3333333333333333,
+        "macro avg": {
+          "precision": 0.16666666666666666,
+          "recall": 0.3333333333333333,
+          "f1-score": 0.2222222222222222,
+          "support": 3.0
+        },
+        "weighted avg": {
+          "precision": 0.16666666666666666,
+          "recall": 0.3333333333333333,
+          "f1-score": 0.2222222222222222,
+          "support": 3.0
+        }
+      }
+    },
+    "random_forest": {
+      "accuracy": 0.3333333333333333,
+      "macro_f1": 0.16666666666666666,
+      "confusion_matrix": [
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0
+        ]
+      ],
+      "classification_report": {
+        "High": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1-score": 0.5,
+          "support": 1.0
+        },
+        "Medium": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 1.0
+        },
+        "Low": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 1.0
+        },
+        "accuracy": 0.3333333333333333,
+        "macro avg": {
+          "precision": 0.1111111111111111,
+          "recall": 0.3333333333333333,
+          "f1-score": 0.16666666666666666,
+          "support": 3.0
+        },
+        "weighted avg": {
+          "precision": 0.1111111111111111,
+          "recall": 0.3333333333333333,
+          "f1-score": 0.16666666666666666,
+          "support": 3.0
+        }
+      }
+    }
+  },
+  "constant_features": [
+    "language",
+    "repository_criticality",
+    "exposure"
+  ],
+  "limitations": [
+    "Only 9 train, 3 validation and 3 test rows; evaluation remains from one authored lab.",
+    "Supplemental projects are training-only; legacy lab is split by authored case family, not held out by whole project.",
+    "Simulated labels, not human-confirmed production priorities.",
+    "Test families were already examined in the earlier experiment; not a fresh blind benchmark.",
+    "Constant context features cannot teach context-dependent prioritization.",
+    "No claim of performance on unseen real projects."
+  ]
+}

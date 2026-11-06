@@ -1,0 +1,74 @@
+{
+  "name": "lab-shell",
+  "case_family": "shell",
+  "split": "validation",
+  "clone_group": "shell",
+  "expected_rule": "auditorx.javascript.security.shell-command-execution",
+  "notes": "Shell concatenation versus fixed program with separate input argument.",
+  "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-shell",
+  "variants": [
+    {
+      "unsafe_file": "variants/criticality-low-impact-low/app/api/unsafe/shell/route.ts",
+      "fixed_file": "variants/criticality-low-impact-low/app/api/fixed/shell/route.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-medium/app/api/unsafe/shell/route.ts",
+      "fixed_file": "variants/criticality-low-impact-medium/app/api/fixed/shell/route.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-high/app/api/unsafe/shell/route.ts",
+      "fixed_file": "variants/criticality-low-impact-high/app/api/fixed/shell/route.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-low/app/api/unsafe/shell/route.ts",
+      "fixed_file": "variants/criticality-normal-impact-low/app/api/fixed/shell/route.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-medium/app/api/unsafe/shell/route.ts",
+      "fixed_file": "variants/criticality-normal-impact-medium/app/api/fixed/shell/route.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-high/app/api/unsafe/shell/route.ts",
+      "fixed_file": "variants/criticality-normal-impact-high/app/api/fixed/shell/route.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-low/app/api/unsafe/shell/route.ts",
+      "fixed_file": "variants/criticality-high-impact-low/app/api/fixed/shell/route.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-medium/app/api/unsafe/shell/route.ts",
+      "fixed_file": "variants/criticality-high-impact-medium/app/api/fixed/shell/route.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-high/app/api/unsafe/shell/route.ts",
+      "fixed_file": "variants/criticality-high-impact-high/app/api/fixed/shell/route.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "high"
+    }
+  ]
+}

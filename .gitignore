@@ -24,7 +24,12 @@ __pycache__/
 /build
 /.local/
 /tmp/
-/output/
+/output/*
+!/output/ml/
+/output/ml/*
+!/output/ml/coursework-v1/
+!/output/ml/coursework-v2/
+!/output/ml/coursework-v3/
 /supabase/.temp/
 /supabase/.branches/
 
@@ -51,8 +56,14 @@ next-env.d.ts
 # Go build cache
 /backend/.gocache/
 
-# Local research dataset snapshots
-/artifacts/datasets/
+# Versioned, fictional coursework snapshots are included for instructor review.
+# Other local datasets remain ignored.
+/artifacts/*
+!/artifacts/datasets/
+/artifacts/datasets/*
+!/artifacts/datasets/nextjs-source-lab-v1/
+!/artifacts/datasets/inventory-card-v1/
+!/artifacts/datasets/priority-source-v3/
 
 # MD
 *.md
@@ -60,3 +71,6 @@ next-env.d.ts
 !/docs/**/*.md
 !/examples/nextjs-scan-lab/README.md
 !/examples/nextjs-scan-lab/.env.example
+!/output/ml/coursework-v1/report.md
+!/output/ml/coursework-v2/report.md
+!/output/ml/coursework-v3/report.md

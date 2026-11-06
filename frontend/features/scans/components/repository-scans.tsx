@@ -51,11 +51,11 @@ export function failureMessage(code: string | null, translate: (message: string)
   }
 }
 
-export function RepositoryScans({ repository }: { repository: Repository }) {
+export function RepositoryScans({ repository, initialScanID }: { repository: Repository; initialScanID?: string }) {
   const canWrite = repository.access_level === "owner" || repository.access_level === "editor";
   const [controller] = useState(() => new ScanController(repository.id, repository.branch, canWrite));
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
-  useEffect(() => { controller.start(); return controller.stop; }, [controller]);
+  useEffect(() => { controller.start(initialScanID); return controller.stop; }, [controller, initialScanID]);
   return <ScanWorkspace repository={repository} state={state} canWrite={canWrite}
     onStart={(context) => { void controller.enqueue(context); }} onCancel={() => { void controller.cancel(); }}
     onLocal={(path, context) => { void controller.local(path, context); }}

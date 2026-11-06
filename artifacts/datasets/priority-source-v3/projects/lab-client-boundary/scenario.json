@@ -1,0 +1,74 @@
+{
+  "name": "lab-client-boundary",
+  "case_family": "client-boundary",
+  "split": "train",
+  "clone_group": "client-boundary",
+  "expected_rule": "auditorx.nextjs.security.client-server-import",
+  "notes": "Scan-only example of client importing fs; outside the app import graph so the app can build.",
+  "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-client-boundary",
+  "variants": [
+    {
+      "unsafe_file": "variants/criticality-low-impact-low/fixtures/unsafe/client-boundary.tsx",
+      "fixed_file": "variants/criticality-low-impact-low/fixtures/fixed/client-boundary.tsx",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-medium/fixtures/unsafe/client-boundary.tsx",
+      "fixed_file": "variants/criticality-low-impact-medium/fixtures/fixed/client-boundary.tsx",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-high/fixtures/unsafe/client-boundary.tsx",
+      "fixed_file": "variants/criticality-low-impact-high/fixtures/fixed/client-boundary.tsx",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-low/fixtures/unsafe/client-boundary.tsx",
+      "fixed_file": "variants/criticality-normal-impact-low/fixtures/fixed/client-boundary.tsx",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-medium/fixtures/unsafe/client-boundary.tsx",
+      "fixed_file": "variants/criticality-normal-impact-medium/fixtures/fixed/client-boundary.tsx",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-high/fixtures/unsafe/client-boundary.tsx",
+      "fixed_file": "variants/criticality-normal-impact-high/fixtures/fixed/client-boundary.tsx",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-low/fixtures/unsafe/client-boundary.tsx",
+      "fixed_file": "variants/criticality-high-impact-low/fixtures/fixed/client-boundary.tsx",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-medium/fixtures/unsafe/client-boundary.tsx",
+      "fixed_file": "variants/criticality-high-impact-medium/fixtures/fixed/client-boundary.tsx",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-high/fixtures/unsafe/client-boundary.tsx",
+      "fixed_file": "variants/criticality-high-impact-high/fixtures/fixed/client-boundary.tsx",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "high"
+    }
+  ]
+}

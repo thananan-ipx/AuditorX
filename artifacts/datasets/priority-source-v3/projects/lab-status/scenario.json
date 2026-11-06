@@ -1,0 +1,74 @@
+{
+  "name": "lab-status",
+  "case_family": "status",
+  "split": "train",
+  "clone_group": "server-action",
+  "expected_rule": "auditorx.nextjs.review.server-action-access",
+  "notes": "In-memory workflow with and without status/transition validation. Advisory expected on BOTH files.",
+  "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-status",
+  "variants": [
+    {
+      "unsafe_file": "variants/criticality-low-impact-low/app/unsafe/status/actions.ts",
+      "fixed_file": "variants/criticality-low-impact-low/app/fixed/status/actions.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-medium/app/unsafe/status/actions.ts",
+      "fixed_file": "variants/criticality-low-impact-medium/app/fixed/status/actions.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-high/app/unsafe/status/actions.ts",
+      "fixed_file": "variants/criticality-low-impact-high/app/fixed/status/actions.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-low/app/unsafe/status/actions.ts",
+      "fixed_file": "variants/criticality-normal-impact-low/app/fixed/status/actions.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-medium/app/unsafe/status/actions.ts",
+      "fixed_file": "variants/criticality-normal-impact-medium/app/fixed/status/actions.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-high/app/unsafe/status/actions.ts",
+      "fixed_file": "variants/criticality-normal-impact-high/app/fixed/status/actions.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-low/app/unsafe/status/actions.ts",
+      "fixed_file": "variants/criticality-high-impact-low/app/fixed/status/actions.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-medium/app/unsafe/status/actions.ts",
+      "fixed_file": "variants/criticality-high-impact-medium/app/fixed/status/actions.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-high/app/unsafe/status/actions.ts",
+      "fixed_file": "variants/criticality-high-impact-high/app/fixed/status/actions.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "high"
+    }
+  ]
+}

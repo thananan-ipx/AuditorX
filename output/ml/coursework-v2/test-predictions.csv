@@ -1,0 +1,4 @@
+﻿finding_fingerprint,case_family,actual,severity_baseline,decision_tree,random_forest
+483fa8681bdee2603a4a5f20bc9a9461532e966442de8f2cfd2ea82a0b3077da,eval,High,High,High,High
+77d239fe95e9ad72a4baf5d55d40940d78302fa0aa48dd0fed508059f647ef51,client-boundary,Low,Medium,Medium,High
+29197e36435e277bd20f2650df53488b0797b1c4c0172629bd225f1a9eca412c,cache,Medium,Low,High,High

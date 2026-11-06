@@ -1,0 +1,35 @@
+{
+  "rows": 108,
+  "scan_ids": {
+    "lab-html": "eb07d145-b189-4fb4-aa43-5f6c69b1fd43",
+    "lab-redirect": "db66b304-ca97-49a5-942c-4d16947e0ba6",
+    "lab-public-secret": "5461b4e5-4e6f-46e9-a656-ff2cdda32479",
+    "lab-logging": "ee3bdab9-11e5-44fe-9cea-f15f3ab16f2c",
+    "lab-credentials": "94b63396-786c-47be-9a9e-5ab4882ccedc",
+    "lab-sql": "0a9fb534-892c-4080-8698-07bdd8ef3b74",
+    "lab-eval": "72791aa8-d50f-4c3c-8228-ca957d5471c4",
+    "lab-shell": "dfbe621c-c97c-4f45-8b2a-92c8558dd087",
+    "lab-ownership": "a964cabd-8aef-4c4e-a0ce-de6ca87f5346",
+    "lab-status": "73e819b3-2b81-4baa-bba9-38344145471e",
+    "lab-cache": "fc306c12-d12c-433e-941e-a350b8d2cde8",
+    "lab-client-boundary": "232b26da-00b1-4e99-8a7c-15bd4a50b0a4"
+  },
+  "sha256": "989ede4959a8f0df590631564b0d8d97e939e359a4681b67b4b78a6cb9082ada",
+  "splits": {
+    "train": {
+      "High": 14,
+      "Medium": 36,
+      "Low": 22
+    },
+    "validation": {
+      "High": 4,
+      "Medium": 10,
+      "Low": 4
+    },
+    "test": {
+      "High": 3,
+      "Medium": 8,
+      "Low": 7
+    }
+  }
+}

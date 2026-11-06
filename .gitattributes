@@ -1,2 +1,10 @@
 # Docker's Linux entrypoint must also work after a Windows checkout.
 *.sh text eol=lf
+
+# Preserve frozen research snapshots byte-for-byte: metrics record their SHA256.
+/artifacts/datasets/nextjs-source-lab-v1/** -text -whitespace
+/artifacts/datasets/inventory-card-v1/** -text -whitespace
+/artifacts/datasets/priority-source-v3/** -text -whitespace
+/output/ml/coursework-v1/** -text -whitespace
+/output/ml/coursework-v2/** -text -whitespace
+/output/ml/coursework-v3/** -text -whitespace

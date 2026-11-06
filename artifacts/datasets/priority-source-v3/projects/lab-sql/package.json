@@ -1,0 +1,7 @@
+{
+  "name": "auditorx-lab-sql",
+  "private": true,
+  "dependencies": {
+    "next": "16.4.5"
+  }
+}

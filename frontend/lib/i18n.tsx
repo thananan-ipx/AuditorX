@@ -8,6 +8,16 @@ const STORAGE_KEY = "auditorx-locale";
 const CHANGE_EVENT = "auditorx-locale-change";
 
 const thai: Record<string, string> = {
+  "Open a local project or GitHub repository to review its scans.": "เลือกโปรเจกต์จากเครื่องหรือ GitHub เพื่อดูผลสแกน",
+  "Local projects": "โปรเจกต์จากเครื่อง",
+  "Folders and archives you have scanned. Each source shows its latest scan.": "โฟลเดอร์และไฟล์ที่เคยนำเข้าสแกน แสดงผลล่าสุดแยกตามแต่ละโปรเจกต์",
+  "Loading local projects…": "กำลังโหลดโปรเจกต์จากเครื่อง…",
+  "No local projects yet": "ยังไม่มีโปรเจกต์จากเครื่อง",
+  "Scanned folders and archives appear here automatically.": "เมื่อสแกนจากพาธ โฟลเดอร์ หรือ ZIP แล้ว โปรเจกต์จะแสดงที่นี่โดยอัตโนมัติ",
+  "Search local projects": "ค้นหาโปรเจกต์จากเครื่อง",
+  "Project name or source path": "ชื่อโปรเจกต์หรือพาธต้นทาง",
+  "local projects on this page": "โปรเจกต์จากเครื่องในหน้านี้",
+  "No local projects match these filters.": "ไม่พบโปรเจกต์จากเครื่องที่ตรงกับตัวกรอง",
   "Fix order": "ลำดับแก้ไข",
   "What to fix first": "ควรแก้อะไรก่อน",
   "Priority is suggested automatically after scanning. High comes first, followed by Medium and Low.": "จัด Priority อัตโนมัติหลังสแกน เรียงจาก High → Medium → Low",

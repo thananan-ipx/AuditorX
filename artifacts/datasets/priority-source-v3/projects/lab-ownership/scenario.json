@@ -1,0 +1,74 @@
+{
+  "name": "lab-ownership",
+  "case_family": "ownership",
+  "split": "train",
+  "clone_group": "server-action",
+  "expected_rule": "auditorx.nextjs.review.server-action-access",
+  "notes": "Toy identity is fixed to Alice; compare missing versus explicit ownership check. Advisory expected on BOTH files.",
+  "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-ownership",
+  "variants": [
+    {
+      "unsafe_file": "variants/criticality-low-impact-low/app/unsafe/ownership/actions.ts",
+      "fixed_file": "variants/criticality-low-impact-low/app/fixed/ownership/actions.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-medium/app/unsafe/ownership/actions.ts",
+      "fixed_file": "variants/criticality-low-impact-medium/app/fixed/ownership/actions.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-high/app/unsafe/ownership/actions.ts",
+      "fixed_file": "variants/criticality-low-impact-high/app/fixed/ownership/actions.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-low/app/unsafe/ownership/actions.ts",
+      "fixed_file": "variants/criticality-normal-impact-low/app/fixed/ownership/actions.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-medium/app/unsafe/ownership/actions.ts",
+      "fixed_file": "variants/criticality-normal-impact-medium/app/fixed/ownership/actions.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-high/app/unsafe/ownership/actions.ts",
+      "fixed_file": "variants/criticality-normal-impact-high/app/fixed/ownership/actions.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-low/app/unsafe/ownership/actions.ts",
+      "fixed_file": "variants/criticality-high-impact-low/app/fixed/ownership/actions.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-medium/app/unsafe/ownership/actions.ts",
+      "fixed_file": "variants/criticality-high-impact-medium/app/fixed/ownership/actions.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-high/app/unsafe/ownership/actions.ts",
+      "fixed_file": "variants/criticality-high-impact-high/app/fixed/ownership/actions.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "high"
+    }
+  ]
+}

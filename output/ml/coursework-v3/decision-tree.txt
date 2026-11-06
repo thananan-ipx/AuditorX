@@ -1,0 +1,46 @@
+|--- impact=low <= 0.50
+|   |--- repository_criticality=low <= 0.50
+|   |   |--- severity=High <= 0.50
+|   |   |   |--- category=Manual review <= 0.50
+|   |   |   |   |--- repository_criticality=normal <= 0.50
+|   |   |   |   |   |--- class: High
+|   |   |   |   |--- repository_criticality=normal >  0.50
+|   |   |   |   |   |--- class: Medium
+|   |   |   |--- category=Manual review >  0.50
+|   |   |   |   |--- repository_criticality=high <= 0.50
+|   |   |   |   |   |--- class: Low
+|   |   |   |   |--- repository_criticality=high >  0.50
+|   |   |   |   |   |--- class: Medium
+|   |   |--- severity=High >  0.50
+|   |   |   |--- repository_criticality=high <= 0.50
+|   |   |   |   |--- impact=medium <= 0.50
+|   |   |   |   |   |--- class: High
+|   |   |   |   |--- impact=medium >  0.50
+|   |   |   |   |   |--- class: Medium
+|   |   |   |--- repository_criticality=high >  0.50
+|   |   |   |   |--- class: High
+|   |--- repository_criticality=low >  0.50
+|   |   |--- severity=High <= 0.50
+|   |   |   |--- impact=medium <= 0.50
+|   |   |   |   |--- category=Manual review <= 0.50
+|   |   |   |   |   |--- class: Medium
+|   |   |   |   |--- category=Manual review >  0.50
+|   |   |   |   |   |--- class: Low
+|   |   |   |--- impact=medium >  0.50
+|   |   |   |   |--- class: Low
+|   |   |--- severity=High >  0.50
+|   |   |   |--- class: Medium
+|--- impact=low >  0.50
+|   |--- repository_criticality=low <= 0.50
+|   |   |--- severity=High <= 0.50
+|   |   |   |--- repository_criticality=normal <= 0.50
+|   |   |   |   |--- category=Security <= 0.50
+|   |   |   |   |   |--- class: Low
+|   |   |   |   |--- category=Security >  0.50
+|   |   |   |   |   |--- class: Medium
+|   |   |   |--- repository_criticality=normal >  0.50
+|   |   |   |   |--- class: Low
+|   |   |--- severity=High >  0.50
+|   |   |   |--- class: Medium
+|   |--- repository_criticality=low >  0.50
+|   |   |--- class: Low

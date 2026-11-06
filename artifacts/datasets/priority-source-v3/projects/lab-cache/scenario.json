@@ -1,0 +1,74 @@
+{
+  "name": "lab-cache",
+  "case_family": "cache",
+  "split": "test",
+  "clone_group": "cache",
+  "expected_rule": "auditorx.nextjs.review.shared-cache",
+  "notes": "User ID captured in closure versus supplied as a cache argument. Advisory expected on BOTH files.",
+  "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-cache",
+  "variants": [
+    {
+      "unsafe_file": "variants/criticality-low-impact-low/lib/unsafe/cache.ts",
+      "fixed_file": "variants/criticality-low-impact-low/lib/fixed/cache.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-medium/lib/unsafe/cache.ts",
+      "fixed_file": "variants/criticality-low-impact-medium/lib/fixed/cache.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-high/lib/unsafe/cache.ts",
+      "fixed_file": "variants/criticality-low-impact-high/lib/fixed/cache.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-low/lib/unsafe/cache.ts",
+      "fixed_file": "variants/criticality-normal-impact-low/lib/fixed/cache.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-medium/lib/unsafe/cache.ts",
+      "fixed_file": "variants/criticality-normal-impact-medium/lib/fixed/cache.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-high/lib/unsafe/cache.ts",
+      "fixed_file": "variants/criticality-normal-impact-high/lib/fixed/cache.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-low/lib/unsafe/cache.ts",
+      "fixed_file": "variants/criticality-high-impact-low/lib/fixed/cache.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-medium/lib/unsafe/cache.ts",
+      "fixed_file": "variants/criticality-high-impact-medium/lib/fixed/cache.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-high/lib/unsafe/cache.ts",
+      "fixed_file": "variants/criticality-high-impact-high/lib/fixed/cache.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "high"
+    }
+  ]
+}

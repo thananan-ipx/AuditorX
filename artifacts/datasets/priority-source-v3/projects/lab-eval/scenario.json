@@ -1,0 +1,74 @@
+{
+  "name": "lab-eval",
+  "case_family": "eval",
+  "split": "test",
+  "clone_group": "eval",
+  "expected_rule": "auditorx.javascript.security.dynamic-eval",
+  "notes": "Request text executed as code versus a constrained numeric parser.",
+  "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-eval",
+  "variants": [
+    {
+      "unsafe_file": "variants/criticality-low-impact-low/app/api/unsafe/eval/route.ts",
+      "fixed_file": "variants/criticality-low-impact-low/app/api/fixed/eval/route.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-medium/app/api/unsafe/eval/route.ts",
+      "fixed_file": "variants/criticality-low-impact-medium/app/api/fixed/eval/route.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-high/app/api/unsafe/eval/route.ts",
+      "fixed_file": "variants/criticality-low-impact-high/app/api/fixed/eval/route.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-low/app/api/unsafe/eval/route.ts",
+      "fixed_file": "variants/criticality-normal-impact-low/app/api/fixed/eval/route.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-medium/app/api/unsafe/eval/route.ts",
+      "fixed_file": "variants/criticality-normal-impact-medium/app/api/fixed/eval/route.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-high/app/api/unsafe/eval/route.ts",
+      "fixed_file": "variants/criticality-normal-impact-high/app/api/fixed/eval/route.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-low/app/api/unsafe/eval/route.ts",
+      "fixed_file": "variants/criticality-high-impact-low/app/api/fixed/eval/route.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-medium/app/api/unsafe/eval/route.ts",
+      "fixed_file": "variants/criticality-high-impact-medium/app/api/fixed/eval/route.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-high/app/api/unsafe/eval/route.ts",
+      "fixed_file": "variants/criticality-high-impact-high/app/api/fixed/eval/route.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "high"
+    }
+  ]
+}

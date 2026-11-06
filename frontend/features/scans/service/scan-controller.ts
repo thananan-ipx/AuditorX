@@ -54,8 +54,9 @@ export class ScanController {
     const generation = this.generation;
     return { signal: controller.signal, current: () => this.alive && this.generation === generation };
   }
-  start = () => {
+  start = (initialScanID?: string) => {
     this.alive = true;
+    if (initialScanID) this.selectedID = initialScanID;
     // React Strict Mode may start again after cleanup. Discard the old action lock.
     this.publish({ ...initialState() });
     void this.refresh();
@@ -77,6 +78,7 @@ export class ScanController {
       this.selectedID = selected?.id;
       // A detail response can be newer than the list from the same refresh.
       const updated = jobs.map((job) => job.id === selected?.id ? selected : job);
+      if (selected && !updated.some(job => job.id === selected.id)) updated.unshift(selected);
       this.publish({ phase: "ready", jobs: updated, selected, findings, error: null });
       if (updated.some(isActive) || (selected && isActive(selected))) {
         this.stopTimer = this.timer.schedule(() => { void this.refresh(); }, 3000);

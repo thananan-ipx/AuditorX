@@ -33,6 +33,40 @@
 บริบท criticality/exposure/impact ในชุดนี้คงที่ จึงยังเรียนรู้ความแตกต่างด้านบริบทไม่ได้
 ข้อมูลเป็น label จำลอง ไม่ใช่ human-confirmed ground truth
 
+## รอบเพิ่มข้อมูล: coursework-v2 (2026-11-06)
+
+รวม 12 simulated labels เดิมกับ 3 simulated labels ล่าสุดจาก inventory-card
+scan `1bd9fa83-605e-4463-ae8f-05c20f637b06` ซึ่งเจ้าของยืนยันว่าเป็นโปรเจกต์ทดลองใช้ข้อมูลทดสอบ
+ทั้งสามเป็น Low จากการตรวจโค้ดโดยผู้ช่วย ไม่ใช่ human ground truth; excluded 8 รายการไม่ใช้ฝึก
+
+- Train 9 / validation 3 / test 3; inventory-card ทั้งโปรเจกต์อยู่ train เท่านั้น
+- คง validation/test เดิมแบบ byte-for-byte เพื่อเทียบกับ v1 ไม่ใช่ benchmark ใหม่
+- Lab เดิมยังแบ่งตาม case family ภายในโปรเจกต์เดียว จึงไม่ใช่การวัดผลแบบแยกทั้งโปรเจกต์
+- Decision Tree depth 1: test Macro-F1 0.222; Random Forest 0.167; severity baseline 0.333 เท่าเดิมทั้งหมด
+- บันทึกโมเดล รายงาน และ service-model.json แยกใน `output/ml/coursework-v2`
+- ตรวจ serving artifact เทียบ sklearn ครบ 15 ตัวอย่าง และตรวจคะแนนจากโมเดลที่บันทึกแล้ว
+- ยังใช้ v1 บนเว็บ เพราะยังไม่พบผลดีขึ้นจากการเพิ่มข้อมูล
+
+คำสั่งทำซ้ำ (ต้องใช้ output directory ใหม่หากมีอยู่แล้ว):
+
+```powershell
+.\.local\ml-demo-env\Scripts\python.exe tools/ml/train-coursework.py --additional-train artifacts/datasets/inventory-card-v1/simulated-labels.csv --experiment lecture_decision_tree_v2 --output-dir output/ml/coursework-v2
+.\.local\ml-demo-env\Scripts\python.exe tools/ml/export-service-model.py --experiment-dir output/ml/coursework-v2
+```
+
+`--additional-train` รับเฉพาะ simulated/test_only ของกลุ่มโปรเจกต์ใหม่ ห้าม fingerprint ซ้ำ
+และใช้ได้หนึ่ง scan snapshot ต่อกลุ่ม โดยไม่ย้ายข้อมูล validation/test เดิม
+การตรวจ clone/near-duplicate ระหว่างโปรเจกต์ยังต้องทำโดยผู้เตรียมชุดข้อมูล
+
+## รอบเพิ่ม source labs: coursework-v3
+
+สร้าง source lab 12 โปรเจกต์ × 9 บริบทสมมติ สแกนจริงและบันทึก 108 simulated labels
+รวม inventory-card อีก 3 แถวเป็น 111 แถว (train 75 / validation 18 / test 18)
+Decision Tree ได้ Macro-F1 0.956 เทียบ severity baseline 0.417 บน test ชุดเดียวกัน
+ผลนี้วัดการเรียนรู้ rubric จำลอง ไม่ใช่ความแม่นยำกับโปรเจกต์จริง และเทียบคะแนนกับ v2 ตรง ๆ ไม่ได้
+ยังไม่เปลี่ยนโมเดลของเว็บ รายละเอียด provenance/split/ข้อจำกัดและวิธีทำซ้ำอยู่ใน
+[source-labs-v3.md](source-labs-v3.md)
+
 ## ทำซ้ำ
 
 ใช้ Python virtual environment และติดตั้ง tools/ml/coursework-requirements.txt

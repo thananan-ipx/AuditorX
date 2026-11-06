@@ -1,0 +1,933 @@
+{
+  "schema_version": "priority-source-labs-v1",
+  "dataset_kind": "simulated_source_lab",
+  "human_ground_truth": false,
+  "projects": [
+    {
+      "name": "lab-html",
+      "case_family": "html",
+      "split": "train",
+      "clone_group": "html",
+      "expected_rule": "auditorx.nextjs.security.request-html",
+      "notes": "Hypothetical public HTML preview; fixed variant renders escaped text.",
+      "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-html",
+      "variants": [
+        {
+          "unsafe_file": "variants/criticality-low-impact-low/app/unsafe/html/page.tsx",
+          "fixed_file": "variants/criticality-low-impact-low/app/fixed/html/page.tsx",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-medium/app/unsafe/html/page.tsx",
+          "fixed_file": "variants/criticality-low-impact-medium/app/fixed/html/page.tsx",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-high/app/unsafe/html/page.tsx",
+          "fixed_file": "variants/criticality-low-impact-high/app/fixed/html/page.tsx",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-low/app/unsafe/html/page.tsx",
+          "fixed_file": "variants/criticality-normal-impact-low/app/fixed/html/page.tsx",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-medium/app/unsafe/html/page.tsx",
+          "fixed_file": "variants/criticality-normal-impact-medium/app/fixed/html/page.tsx",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-high/app/unsafe/html/page.tsx",
+          "fixed_file": "variants/criticality-normal-impact-high/app/fixed/html/page.tsx",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-low/app/unsafe/html/page.tsx",
+          "fixed_file": "variants/criticality-high-impact-low/app/fixed/html/page.tsx",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-medium/app/unsafe/html/page.tsx",
+          "fixed_file": "variants/criticality-high-impact-medium/app/fixed/html/page.tsx",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-high/app/unsafe/html/page.tsx",
+          "fixed_file": "variants/criticality-high-impact-high/app/fixed/html/page.tsx",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "high"
+        }
+      ]
+    },
+    {
+      "name": "lab-redirect",
+      "case_family": "redirect",
+      "split": "train",
+      "clone_group": "redirect",
+      "expected_rule": "auditorx.nextjs.security.request-redirect",
+      "notes": "User-controlled destination versus a constant local allowlist.",
+      "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-redirect",
+      "variants": [
+        {
+          "unsafe_file": "variants/criticality-low-impact-low/app/api/unsafe/redirect/route.ts",
+          "fixed_file": "variants/criticality-low-impact-low/app/api/fixed/redirect/route.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-medium/app/api/unsafe/redirect/route.ts",
+          "fixed_file": "variants/criticality-low-impact-medium/app/api/fixed/redirect/route.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-high/app/api/unsafe/redirect/route.ts",
+          "fixed_file": "variants/criticality-low-impact-high/app/api/fixed/redirect/route.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-low/app/api/unsafe/redirect/route.ts",
+          "fixed_file": "variants/criticality-normal-impact-low/app/api/fixed/redirect/route.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-medium/app/api/unsafe/redirect/route.ts",
+          "fixed_file": "variants/criticality-normal-impact-medium/app/api/fixed/redirect/route.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-high/app/api/unsafe/redirect/route.ts",
+          "fixed_file": "variants/criticality-normal-impact-high/app/api/fixed/redirect/route.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-low/app/api/unsafe/redirect/route.ts",
+          "fixed_file": "variants/criticality-high-impact-low/app/api/fixed/redirect/route.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-medium/app/api/unsafe/redirect/route.ts",
+          "fixed_file": "variants/criticality-high-impact-medium/app/api/fixed/redirect/route.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-high/app/api/unsafe/redirect/route.ts",
+          "fixed_file": "variants/criticality-high-impact-high/app/api/fixed/redirect/route.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "high"
+        }
+      ]
+    },
+    {
+      "name": "lab-public-secret",
+      "case_family": "public-secret",
+      "split": "train",
+      "clone_group": "public-secret",
+      "expected_rule": "auditorx.nextjs.security.public-secret",
+      "notes": "Secret-like public name; the actual value is fake and has no authority.",
+      "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-public-secret",
+      "variants": [
+        {
+          "unsafe_file": "variants/criticality-low-impact-low/app/unsafe/public-secret/page.tsx",
+          "fixed_file": "variants/criticality-low-impact-low/app/fixed/public-secret/page.tsx",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-medium/app/unsafe/public-secret/page.tsx",
+          "fixed_file": "variants/criticality-low-impact-medium/app/fixed/public-secret/page.tsx",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-high/app/unsafe/public-secret/page.tsx",
+          "fixed_file": "variants/criticality-low-impact-high/app/fixed/public-secret/page.tsx",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-low/app/unsafe/public-secret/page.tsx",
+          "fixed_file": "variants/criticality-normal-impact-low/app/fixed/public-secret/page.tsx",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-medium/app/unsafe/public-secret/page.tsx",
+          "fixed_file": "variants/criticality-normal-impact-medium/app/fixed/public-secret/page.tsx",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-high/app/unsafe/public-secret/page.tsx",
+          "fixed_file": "variants/criticality-normal-impact-high/app/fixed/public-secret/page.tsx",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-low/app/unsafe/public-secret/page.tsx",
+          "fixed_file": "variants/criticality-high-impact-low/app/fixed/public-secret/page.tsx",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-medium/app/unsafe/public-secret/page.tsx",
+          "fixed_file": "variants/criticality-high-impact-medium/app/fixed/public-secret/page.tsx",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-high/app/unsafe/public-secret/page.tsx",
+          "fixed_file": "variants/criticality-high-impact-high/app/fixed/public-secret/page.tsx",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "high"
+        }
+      ]
+    },
+    {
+      "name": "lab-logging",
+      "case_family": "logging",
+      "split": "validation",
+      "clone_group": "logging",
+      "expected_rule": "auditorx.javascript.coding-standard.sensitive-logging",
+      "notes": "Hypothetical real credential logging; use fake form values only.",
+      "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-logging",
+      "variants": [
+        {
+          "unsafe_file": "variants/criticality-low-impact-low/app/api/unsafe/logging/route.ts",
+          "fixed_file": "variants/criticality-low-impact-low/app/api/fixed/logging/route.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-medium/app/api/unsafe/logging/route.ts",
+          "fixed_file": "variants/criticality-low-impact-medium/app/api/fixed/logging/route.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-high/app/api/unsafe/logging/route.ts",
+          "fixed_file": "variants/criticality-low-impact-high/app/api/fixed/logging/route.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-low/app/api/unsafe/logging/route.ts",
+          "fixed_file": "variants/criticality-normal-impact-low/app/api/fixed/logging/route.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-medium/app/api/unsafe/logging/route.ts",
+          "fixed_file": "variants/criticality-normal-impact-medium/app/api/fixed/logging/route.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-high/app/api/unsafe/logging/route.ts",
+          "fixed_file": "variants/criticality-normal-impact-high/app/api/fixed/logging/route.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-low/app/api/unsafe/logging/route.ts",
+          "fixed_file": "variants/criticality-high-impact-low/app/api/fixed/logging/route.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-medium/app/api/unsafe/logging/route.ts",
+          "fixed_file": "variants/criticality-high-impact-medium/app/api/fixed/logging/route.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-high/app/api/unsafe/logging/route.ts",
+          "fixed_file": "variants/criticality-high-impact-high/app/api/fixed/logging/route.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "high"
+        }
+      ]
+    },
+    {
+      "name": "lab-credentials",
+      "case_family": "credentials",
+      "split": "train",
+      "clone_group": "credentials",
+      "expected_rule": "auditorx.javascript.security.hardcoded-secret",
+      "notes": "Fake hardcoded password fixture, not a leaked real credential.",
+      "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-credentials",
+      "variants": [
+        {
+          "unsafe_file": "variants/criticality-low-impact-low/lib/unsafe/credentials.ts",
+          "fixed_file": "variants/criticality-low-impact-low/lib/fixed/credentials.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-medium/lib/unsafe/credentials.ts",
+          "fixed_file": "variants/criticality-low-impact-medium/lib/fixed/credentials.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-high/lib/unsafe/credentials.ts",
+          "fixed_file": "variants/criticality-low-impact-high/lib/fixed/credentials.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-low/lib/unsafe/credentials.ts",
+          "fixed_file": "variants/criticality-normal-impact-low/lib/fixed/credentials.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-medium/lib/unsafe/credentials.ts",
+          "fixed_file": "variants/criticality-normal-impact-medium/lib/fixed/credentials.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-high/lib/unsafe/credentials.ts",
+          "fixed_file": "variants/criticality-normal-impact-high/lib/fixed/credentials.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-low/lib/unsafe/credentials.ts",
+          "fixed_file": "variants/criticality-high-impact-low/lib/fixed/credentials.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-medium/lib/unsafe/credentials.ts",
+          "fixed_file": "variants/criticality-high-impact-medium/lib/fixed/credentials.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-high/lib/unsafe/credentials.ts",
+          "fixed_file": "variants/criticality-high-impact-high/lib/fixed/credentials.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "high"
+        }
+      ]
+    },
+    {
+      "name": "lab-sql",
+      "case_family": "sql",
+      "split": "train",
+      "clone_group": "sql",
+      "expected_rule": "auditorx.javascript.security.sql-template-interpolation",
+      "notes": "Mock SQL sink only: proves scanner coverage, not a working SQL injection.",
+      "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-sql",
+      "variants": [
+        {
+          "unsafe_file": "variants/criticality-low-impact-low/app/api/unsafe/sql/route.ts",
+          "fixed_file": "variants/criticality-low-impact-low/app/api/fixed/sql/route.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-medium/app/api/unsafe/sql/route.ts",
+          "fixed_file": "variants/criticality-low-impact-medium/app/api/fixed/sql/route.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-high/app/api/unsafe/sql/route.ts",
+          "fixed_file": "variants/criticality-low-impact-high/app/api/fixed/sql/route.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-low/app/api/unsafe/sql/route.ts",
+          "fixed_file": "variants/criticality-normal-impact-low/app/api/fixed/sql/route.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-medium/app/api/unsafe/sql/route.ts",
+          "fixed_file": "variants/criticality-normal-impact-medium/app/api/fixed/sql/route.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-high/app/api/unsafe/sql/route.ts",
+          "fixed_file": "variants/criticality-normal-impact-high/app/api/fixed/sql/route.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-low/app/api/unsafe/sql/route.ts",
+          "fixed_file": "variants/criticality-high-impact-low/app/api/fixed/sql/route.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-medium/app/api/unsafe/sql/route.ts",
+          "fixed_file": "variants/criticality-high-impact-medium/app/api/fixed/sql/route.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-high/app/api/unsafe/sql/route.ts",
+          "fixed_file": "variants/criticality-high-impact-high/app/api/fixed/sql/route.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "high"
+        }
+      ]
+    },
+    {
+      "name": "lab-eval",
+      "case_family": "eval",
+      "split": "test",
+      "clone_group": "eval",
+      "expected_rule": "auditorx.javascript.security.dynamic-eval",
+      "notes": "Request text executed as code versus a constrained numeric parser.",
+      "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-eval",
+      "variants": [
+        {
+          "unsafe_file": "variants/criticality-low-impact-low/app/api/unsafe/eval/route.ts",
+          "fixed_file": "variants/criticality-low-impact-low/app/api/fixed/eval/route.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-medium/app/api/unsafe/eval/route.ts",
+          "fixed_file": "variants/criticality-low-impact-medium/app/api/fixed/eval/route.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-high/app/api/unsafe/eval/route.ts",
+          "fixed_file": "variants/criticality-low-impact-high/app/api/fixed/eval/route.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-low/app/api/unsafe/eval/route.ts",
+          "fixed_file": "variants/criticality-normal-impact-low/app/api/fixed/eval/route.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-medium/app/api/unsafe/eval/route.ts",
+          "fixed_file": "variants/criticality-normal-impact-medium/app/api/fixed/eval/route.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-high/app/api/unsafe/eval/route.ts",
+          "fixed_file": "variants/criticality-normal-impact-high/app/api/fixed/eval/route.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-low/app/api/unsafe/eval/route.ts",
+          "fixed_file": "variants/criticality-high-impact-low/app/api/fixed/eval/route.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-medium/app/api/unsafe/eval/route.ts",
+          "fixed_file": "variants/criticality-high-impact-medium/app/api/fixed/eval/route.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-high/app/api/unsafe/eval/route.ts",
+          "fixed_file": "variants/criticality-high-impact-high/app/api/fixed/eval/route.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "high"
+        }
+      ]
+    },
+    {
+      "name": "lab-shell",
+      "case_family": "shell",
+      "split": "validation",
+      "clone_group": "shell",
+      "expected_rule": "auditorx.javascript.security.shell-command-execution",
+      "notes": "Shell concatenation versus fixed program with separate input argument.",
+      "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-shell",
+      "variants": [
+        {
+          "unsafe_file": "variants/criticality-low-impact-low/app/api/unsafe/shell/route.ts",
+          "fixed_file": "variants/criticality-low-impact-low/app/api/fixed/shell/route.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-medium/app/api/unsafe/shell/route.ts",
+          "fixed_file": "variants/criticality-low-impact-medium/app/api/fixed/shell/route.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-high/app/api/unsafe/shell/route.ts",
+          "fixed_file": "variants/criticality-low-impact-high/app/api/fixed/shell/route.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-low/app/api/unsafe/shell/route.ts",
+          "fixed_file": "variants/criticality-normal-impact-low/app/api/fixed/shell/route.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-medium/app/api/unsafe/shell/route.ts",
+          "fixed_file": "variants/criticality-normal-impact-medium/app/api/fixed/shell/route.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-high/app/api/unsafe/shell/route.ts",
+          "fixed_file": "variants/criticality-normal-impact-high/app/api/fixed/shell/route.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-low/app/api/unsafe/shell/route.ts",
+          "fixed_file": "variants/criticality-high-impact-low/app/api/fixed/shell/route.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-medium/app/api/unsafe/shell/route.ts",
+          "fixed_file": "variants/criticality-high-impact-medium/app/api/fixed/shell/route.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-high/app/api/unsafe/shell/route.ts",
+          "fixed_file": "variants/criticality-high-impact-high/app/api/fixed/shell/route.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "high"
+        }
+      ]
+    },
+    {
+      "name": "lab-ownership",
+      "case_family": "ownership",
+      "split": "train",
+      "clone_group": "server-action",
+      "expected_rule": "auditorx.nextjs.review.server-action-access",
+      "notes": "Toy identity is fixed to Alice; compare missing versus explicit ownership check. Advisory expected on BOTH files.",
+      "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-ownership",
+      "variants": [
+        {
+          "unsafe_file": "variants/criticality-low-impact-low/app/unsafe/ownership/actions.ts",
+          "fixed_file": "variants/criticality-low-impact-low/app/fixed/ownership/actions.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-medium/app/unsafe/ownership/actions.ts",
+          "fixed_file": "variants/criticality-low-impact-medium/app/fixed/ownership/actions.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-high/app/unsafe/ownership/actions.ts",
+          "fixed_file": "variants/criticality-low-impact-high/app/fixed/ownership/actions.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-low/app/unsafe/ownership/actions.ts",
+          "fixed_file": "variants/criticality-normal-impact-low/app/fixed/ownership/actions.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-medium/app/unsafe/ownership/actions.ts",
+          "fixed_file": "variants/criticality-normal-impact-medium/app/fixed/ownership/actions.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-high/app/unsafe/ownership/actions.ts",
+          "fixed_file": "variants/criticality-normal-impact-high/app/fixed/ownership/actions.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-low/app/unsafe/ownership/actions.ts",
+          "fixed_file": "variants/criticality-high-impact-low/app/fixed/ownership/actions.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-medium/app/unsafe/ownership/actions.ts",
+          "fixed_file": "variants/criticality-high-impact-medium/app/fixed/ownership/actions.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-high/app/unsafe/ownership/actions.ts",
+          "fixed_file": "variants/criticality-high-impact-high/app/fixed/ownership/actions.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "high"
+        }
+      ]
+    },
+    {
+      "name": "lab-status",
+      "case_family": "status",
+      "split": "train",
+      "clone_group": "server-action",
+      "expected_rule": "auditorx.nextjs.review.server-action-access",
+      "notes": "In-memory workflow with and without status/transition validation. Advisory expected on BOTH files.",
+      "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-status",
+      "variants": [
+        {
+          "unsafe_file": "variants/criticality-low-impact-low/app/unsafe/status/actions.ts",
+          "fixed_file": "variants/criticality-low-impact-low/app/fixed/status/actions.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-medium/app/unsafe/status/actions.ts",
+          "fixed_file": "variants/criticality-low-impact-medium/app/fixed/status/actions.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-high/app/unsafe/status/actions.ts",
+          "fixed_file": "variants/criticality-low-impact-high/app/fixed/status/actions.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-low/app/unsafe/status/actions.ts",
+          "fixed_file": "variants/criticality-normal-impact-low/app/fixed/status/actions.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-medium/app/unsafe/status/actions.ts",
+          "fixed_file": "variants/criticality-normal-impact-medium/app/fixed/status/actions.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-high/app/unsafe/status/actions.ts",
+          "fixed_file": "variants/criticality-normal-impact-high/app/fixed/status/actions.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-low/app/unsafe/status/actions.ts",
+          "fixed_file": "variants/criticality-high-impact-low/app/fixed/status/actions.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-medium/app/unsafe/status/actions.ts",
+          "fixed_file": "variants/criticality-high-impact-medium/app/fixed/status/actions.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-high/app/unsafe/status/actions.ts",
+          "fixed_file": "variants/criticality-high-impact-high/app/fixed/status/actions.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "high"
+        }
+      ]
+    },
+    {
+      "name": "lab-cache",
+      "case_family": "cache",
+      "split": "test",
+      "clone_group": "cache",
+      "expected_rule": "auditorx.nextjs.review.shared-cache",
+      "notes": "User ID captured in closure versus supplied as a cache argument. Advisory expected on BOTH files.",
+      "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-cache",
+      "variants": [
+        {
+          "unsafe_file": "variants/criticality-low-impact-low/lib/unsafe/cache.ts",
+          "fixed_file": "variants/criticality-low-impact-low/lib/fixed/cache.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-medium/lib/unsafe/cache.ts",
+          "fixed_file": "variants/criticality-low-impact-medium/lib/fixed/cache.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-high/lib/unsafe/cache.ts",
+          "fixed_file": "variants/criticality-low-impact-high/lib/fixed/cache.ts",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-low/lib/unsafe/cache.ts",
+          "fixed_file": "variants/criticality-normal-impact-low/lib/fixed/cache.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-medium/lib/unsafe/cache.ts",
+          "fixed_file": "variants/criticality-normal-impact-medium/lib/fixed/cache.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-high/lib/unsafe/cache.ts",
+          "fixed_file": "variants/criticality-normal-impact-high/lib/fixed/cache.ts",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-low/lib/unsafe/cache.ts",
+          "fixed_file": "variants/criticality-high-impact-low/lib/fixed/cache.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-medium/lib/unsafe/cache.ts",
+          "fixed_file": "variants/criticality-high-impact-medium/lib/fixed/cache.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-high/lib/unsafe/cache.ts",
+          "fixed_file": "variants/criticality-high-impact-high/lib/fixed/cache.ts",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "high"
+        }
+      ]
+    },
+    {
+      "name": "lab-client-boundary",
+      "case_family": "client-boundary",
+      "split": "train",
+      "clone_group": "client-boundary",
+      "expected_rule": "auditorx.nextjs.security.client-server-import",
+      "notes": "Scan-only example of client importing fs; outside the app import graph so the app can build.",
+      "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-client-boundary",
+      "variants": [
+        {
+          "unsafe_file": "variants/criticality-low-impact-low/fixtures/unsafe/client-boundary.tsx",
+          "fixed_file": "variants/criticality-low-impact-low/fixtures/fixed/client-boundary.tsx",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-medium/fixtures/unsafe/client-boundary.tsx",
+          "fixed_file": "variants/criticality-low-impact-medium/fixtures/fixed/client-boundary.tsx",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-low-impact-high/fixtures/unsafe/client-boundary.tsx",
+          "fixed_file": "variants/criticality-low-impact-high/fixtures/fixed/client-boundary.tsx",
+          "repository_criticality": "low",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-low/fixtures/unsafe/client-boundary.tsx",
+          "fixed_file": "variants/criticality-normal-impact-low/fixtures/fixed/client-boundary.tsx",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-medium/fixtures/unsafe/client-boundary.tsx",
+          "fixed_file": "variants/criticality-normal-impact-medium/fixtures/fixed/client-boundary.tsx",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-normal-impact-high/fixtures/unsafe/client-boundary.tsx",
+          "fixed_file": "variants/criticality-normal-impact-high/fixtures/fixed/client-boundary.tsx",
+          "repository_criticality": "normal",
+          "exposure": "test_only",
+          "impact": "high"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-low/fixtures/unsafe/client-boundary.tsx",
+          "fixed_file": "variants/criticality-high-impact-low/fixtures/fixed/client-boundary.tsx",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "low"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-medium/fixtures/unsafe/client-boundary.tsx",
+          "fixed_file": "variants/criticality-high-impact-medium/fixtures/fixed/client-boundary.tsx",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "medium"
+        },
+        {
+          "unsafe_file": "variants/criticality-high-impact-high/fixtures/unsafe/client-boundary.tsx",
+          "fixed_file": "variants/criticality-high-impact-high/fixtures/fixed/client-boundary.tsx",
+          "repository_criticality": "high",
+          "exposure": "test_only",
+          "impact": "high"
+        }
+      ]
+    }
+  ],
+  "project_count": 12,
+  "primary_rows_expected": 108,
+  "frozen_split": {
+    "train": [
+      "client-boundary",
+      "credentials",
+      "html",
+      "ownership",
+      "public-secret",
+      "redirect",
+      "sql",
+      "status"
+    ],
+    "validation": [
+      "logging",
+      "shell"
+    ],
+    "test": [
+      "cache",
+      "eval"
+    ]
+  },
+  "rubric": "score = severity(Low=1,Medium=2,High=3) + criticality(low=0,normal=1,high=2) + impact(low=0,medium=1,high=2); High>=6, Medium>=4, otherwise Low",
+  "predeclared_tree_depths": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "limitations": [
+    "Twelve derived source fixture projects, not twelve independently developed production apps.",
+    "Nine context copies per family are correlated; families and unsafe/fixed pairs stay in one split.",
+    "Shared mock boilerplate is not an example and is never used as a model feature.",
+    "Labels come from a declared simulator rubric, not human ground truth.",
+    "Family templates were examined previously; evaluation is not a new blind real-project benchmark.",
+    "Scores measure reproduction of the rubric, not real-world vulnerability severity or repair value."
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "name": "auditorx-lab-client-boundary",
+  "private": true,
+  "dependencies": {
+    "next": "16.4.5"
+  }
+}

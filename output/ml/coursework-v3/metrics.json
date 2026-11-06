@@ -1,0 +1,269 @@
+{
+  "experiment": "lecture_decision_tree_v3",
+  "dataset_kind": "simulated_source_lab",
+  "human_ground_truth": false,
+  "input_sha256": "989ede4959a8f0df590631564b0d8d97e939e359a4681b67b4b78a6cb9082ada",
+  "scan_ids": [
+    "0a9fb534-892c-4080-8698-07bdd8ef3b74",
+    "1bd9fa83-605e-4463-ae8f-05c20f637b06",
+    "232b26da-00b1-4e99-8a7c-15bd4a50b0a4",
+    "5461b4e5-4e6f-46e9-a656-ff2cdda32479",
+    "72791aa8-d50f-4c3c-8228-ca957d5471c4",
+    "73e819b3-2b81-4baa-bba9-38344145471e",
+    "94b63396-786c-47be-9a9e-5ab4882ccedc",
+    "a964cabd-8aef-4c4e-a0ce-de6ca87f5346",
+    "db66b304-ca97-49a5-942c-4d16947e0ba6",
+    "dfbe621c-c97c-4f45-8b2a-92c8558dd087",
+    "eb07d145-b189-4fb4-aa43-5f6c69b1fd43",
+    "ee3bdab9-11e5-44fe-9cea-f15f3ab16f2c",
+    "fc306c12-d12c-433e-941e-a350b8d2cde8"
+  ],
+  "source_revisions": [
+    "06e49ec49da4326d3be547f8c724faebea0056097ff164ff6caa20380c5453ce",
+    "1661798f5dcb8dc68cdb6e8b0461937e746e4a0a0c529b7d8700a383264ce1eb",
+    "1c7364df09a760150fee1b0203ba0d11c1a7933ba599caf169fd914eb0e911ae",
+    "46f8294d87bc5b5b1e366a41cf53475763d6cd426a455088d75f86a64dfcc84f",
+    "4ca932ce2d2a438f5c8b924bd1dffbb6eab040cc04c86eb153fa19e5680947ad",
+    "569006debf59b9691a83d056b938d1deabe3253dc0e8dab1321d944759d67c57",
+    "7f9657e65eb1820b30b9e5bb6a8ec2b9f2ca002cf93dbb707ba676475a65cc0d",
+    "969b0e1daae55b97b6b4a58adcd8a4c29caae6c49b9dcd331459f0eccb2c42fa",
+    "ca931ffbbbe446b007692a203c713cff064cecb62bb7948f02cc605b00fdf71d",
+    "cf86474d57d83851c66b98a986ceac5db20448eaa0ab4f6f7f679649c804e0e5",
+    "d26ccd89490c1e9bacf50c89a55604175d07f95662dcd4964da9a009fcba7dad",
+    "f909adbaa8adf3248b755e0a297dc3e20808e25d27d0e7c0fa1e98f623051f2a",
+    "fc5339ecc8961583d26a8b63ed9d51ac5775f08b565383d03afafac3c4d3c4c4"
+  ],
+  "sklearn_version": "1.7.2",
+  "features": [
+    "severity",
+    "rule_family",
+    "category",
+    "language",
+    "file_type",
+    "rule_count_in_scan",
+    "repository_criticality",
+    "exposure",
+    "impact"
+  ],
+  "additional_input_sha256": "54cbdf4f85301e9871df02b9529f3b5af2f5f3388fa2c12b7b32a45320abca86",
+  "additional_training_rows": 3,
+  "split_families": {
+    "train": [
+      "client-boundary",
+      "credentials",
+      "html",
+      "ownership",
+      "project:inventory-card",
+      "public-secret",
+      "redirect",
+      "sql",
+      "status"
+    ],
+    "validation": [
+      "logging",
+      "shell"
+    ],
+    "test": [
+      "cache",
+      "eval"
+    ]
+  },
+  "split_rows": {
+    "train": 75,
+    "validation": 18,
+    "test": 18
+  },
+  "primary_model": "decision_tree",
+  "selected_max_depth": 5,
+  "tree_validation_macro_f1": {
+    "1": 0.3666666666666667,
+    "2": 0.6666666666666666,
+    "3": 0.7759259259259258,
+    "4": 0.7759259259259258,
+    "5": 0.8888888888888888
+  },
+  "forest_validation_macro_f1": 0.8888888888888888,
+  "confusion_matrix_labels": [
+    "High",
+    "Medium",
+    "Low"
+  ],
+  "test_results": {
+    "severity_baseline": {
+      "accuracy": 0.5,
+      "macro_f1": 0.4166666666666667,
+      "confusion_matrix": [
+        [
+          3,
+          0,
+          0
+        ],
+        [
+          5,
+          0,
+          3
+        ],
+        [
+          1,
+          0,
+          6
+        ]
+      ],
+      "classification_report": {
+        "High": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1-score": 0.5,
+          "support": 3.0
+        },
+        "Medium": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 8.0
+        },
+        "Low": {
+          "precision": 0.6666666666666666,
+          "recall": 0.8571428571428571,
+          "f1-score": 0.75,
+          "support": 7.0
+        },
+        "accuracy": 0.5,
+        "macro avg": {
+          "precision": 0.3333333333333333,
+          "recall": 0.6190476190476191,
+          "f1-score": 0.4166666666666667,
+          "support": 18.0
+        },
+        "weighted avg": {
+          "precision": 0.31481481481481477,
+          "recall": 0.5,
+          "f1-score": 0.375,
+          "support": 18.0
+        }
+      }
+    },
+    "decision_tree": {
+      "accuracy": 0.9444444444444444,
+      "macro_f1": 0.9555555555555556,
+      "confusion_matrix": [
+        [
+          3,
+          0,
+          0
+        ],
+        [
+          0,
+          7,
+          1
+        ],
+        [
+          0,
+          0,
+          7
+        ]
+      ],
+      "classification_report": {
+        "High": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 3.0
+        },
+        "Medium": {
+          "precision": 1.0,
+          "recall": 0.875,
+          "f1-score": 0.9333333333333333,
+          "support": 8.0
+        },
+        "Low": {
+          "precision": 0.875,
+          "recall": 1.0,
+          "f1-score": 0.9333333333333333,
+          "support": 7.0
+        },
+        "accuracy": 0.9444444444444444,
+        "macro avg": {
+          "precision": 0.9583333333333334,
+          "recall": 0.9583333333333334,
+          "f1-score": 0.9555555555555556,
+          "support": 18.0
+        },
+        "weighted avg": {
+          "precision": 0.9513888888888888,
+          "recall": 0.9444444444444444,
+          "f1-score": 0.9444444444444444,
+          "support": 18.0
+        }
+      }
+    },
+    "random_forest": {
+      "accuracy": 0.8888888888888888,
+      "macro_f1": 0.8825396825396825,
+      "confusion_matrix": [
+        [
+          3,
+          0,
+          0
+        ],
+        [
+          1,
+          6,
+          1
+        ],
+        [
+          0,
+          0,
+          7
+        ]
+      ],
+      "classification_report": {
+        "High": {
+          "precision": 0.75,
+          "recall": 1.0,
+          "f1-score": 0.8571428571428571,
+          "support": 3.0
+        },
+        "Medium": {
+          "precision": 1.0,
+          "recall": 0.75,
+          "f1-score": 0.8571428571428571,
+          "support": 8.0
+        },
+        "Low": {
+          "precision": 0.875,
+          "recall": 1.0,
+          "f1-score": 0.9333333333333333,
+          "support": 7.0
+        },
+        "accuracy": 0.8888888888888888,
+        "macro avg": {
+          "precision": 0.875,
+          "recall": 0.9166666666666666,
+          "f1-score": 0.8825396825396825,
+          "support": 18.0
+        },
+        "weighted avg": {
+          "precision": 0.9097222222222222,
+          "recall": 0.8888888888888888,
+          "f1-score": 0.8867724867724867,
+          "support": 18.0
+        }
+      }
+    }
+  },
+  "constant_features": [
+    "language",
+    "exposure"
+  ],
+  "limitations": [
+    "Twelve derived source fixture projects, not twelve independently developed production apps.",
+    "Nine context copies per family are correlated; families and unsafe/fixed pairs stay in one split.",
+    "Shared mock boilerplate is not an example and is never used as a model feature.",
+    "Labels come from a declared simulator rubric, not human ground truth.",
+    "Family templates were examined previously; evaluation is not a new blind real-project benchmark.",
+    "Scores measure reproduction of the rubric, not real-world vulnerability severity or repair value.",
+    "Supplemental inventory-card labels are assistant-authored, test-only and training-only."
+  ],
+  "source_manifest_sha256": "433f39b2aa27f490a522de207e1e479855a6d42ab25bc91f8d85e5a06df1deae"
+}

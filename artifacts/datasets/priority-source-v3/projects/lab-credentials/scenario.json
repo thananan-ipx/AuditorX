@@ -1,0 +1,74 @@
+{
+  "name": "lab-credentials",
+  "case_family": "credentials",
+  "split": "train",
+  "clone_group": "credentials",
+  "expected_rule": "auditorx.javascript.security.hardcoded-secret",
+  "notes": "Fake hardcoded password fixture, not a leaked real credential.",
+  "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-credentials",
+  "variants": [
+    {
+      "unsafe_file": "variants/criticality-low-impact-low/lib/unsafe/credentials.ts",
+      "fixed_file": "variants/criticality-low-impact-low/lib/fixed/credentials.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-medium/lib/unsafe/credentials.ts",
+      "fixed_file": "variants/criticality-low-impact-medium/lib/fixed/credentials.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-high/lib/unsafe/credentials.ts",
+      "fixed_file": "variants/criticality-low-impact-high/lib/fixed/credentials.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-low/lib/unsafe/credentials.ts",
+      "fixed_file": "variants/criticality-normal-impact-low/lib/fixed/credentials.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-medium/lib/unsafe/credentials.ts",
+      "fixed_file": "variants/criticality-normal-impact-medium/lib/fixed/credentials.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-high/lib/unsafe/credentials.ts",
+      "fixed_file": "variants/criticality-normal-impact-high/lib/fixed/credentials.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-low/lib/unsafe/credentials.ts",
+      "fixed_file": "variants/criticality-high-impact-low/lib/fixed/credentials.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-medium/lib/unsafe/credentials.ts",
+      "fixed_file": "variants/criticality-high-impact-medium/lib/fixed/credentials.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-high/lib/unsafe/credentials.ts",
+      "fixed_file": "variants/criticality-high-impact-high/lib/fixed/credentials.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "high"
+    }
+  ]
+}

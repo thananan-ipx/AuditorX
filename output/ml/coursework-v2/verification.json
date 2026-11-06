@@ -1,0 +1,30 @@
+{
+  "experiment": "lecture_decision_tree_v2",
+  "dataset_kind": "simulated_source_lab",
+  "human_ground_truth": false,
+  "split_rows": {
+    "train": 9,
+    "validation": 3,
+    "test": 3
+  },
+  "new_project": "inventory-card",
+  "new_training_rows": 3,
+  "validation_and_test_unchanged": true,
+  "serving_parity_rows": 15,
+  "test_macro_f1": {
+    "severity_baseline": {
+      "v1": 0.3333333333333333,
+      "v2": 0.3333333333333333
+    },
+    "decision_tree": {
+      "v1": 0.2222222222222222,
+      "v2": 0.2222222222222222
+    },
+    "random_forest": {
+      "v1": 0.16666666666666666,
+      "v2": 0.16666666666666666
+    }
+  },
+  "deployment": "v1 retained; v2 has no measured improvement",
+  "artifact_sha256": "06043a1757302929859a1e10c060ed2606c3e214ed81bad0f9ad461fdeb5c15e"
+}

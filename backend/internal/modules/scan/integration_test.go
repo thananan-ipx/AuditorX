@@ -194,8 +194,19 @@ func TestPostgresIntegration(t *testing.T) {
 	t.Logf("Persisted and retrieved %d finding(s) through HTTP for scan %s", len(results.Data), accepted.ID)
 	// Completion queued durable inference in the same transaction; it runs without a browser.
 	priorityWorker := PredictionWorker{Queue: store, Predictor: &predictionStub{}}
-	if worked, e := priorityWorker.RunOne(ctx); e != nil || !worked {
-		t.Fatalf("priority worker: %v %v", worked, e)
+	// The harness also runs repository tests, which may have queued older jobs.
+	// Drain the shared queue until this scan completes rather than assuming it is first.
+	for attempts := 0; attempts < 16; attempts++ {
+		if worked, e := priorityWorker.RunOne(ctx); e != nil || !worked {
+			t.Fatalf("priority worker: %v %v", worked, e)
+		}
+		current, e := store.LatestPrediction(ctx, alice, repo.ID, accepted.ID)
+		if e != nil {
+			t.Fatal(e)
+		}
+		if current.Status == "completed" {
+			break
+		}
 	}
 	prediction, e := store.LatestPrediction(ctx, alice, repo.ID, accepted.ID)
 	if e != nil || prediction.Status != "completed" || prediction.Result == nil || len(prediction.Result.Predictions) != 1 {
@@ -336,6 +347,47 @@ func TestPostgresIntegration(t *testing.T) {
 	localResult, err := store.Get(ctx, alice, repo.ID, localJob.ID)
 	if err != nil || localResult.Status != "completed" || localResult.SourceKind != "local" || localResult.CommitSHA == nil || !uploadDigestPattern.MatchString(*localResult.CommitSHA) {
 		t.Fatalf("local result: %+v %v", localResult, err)
+	}
+
+	// Local discovery groups source history and respects membership through RLS.
+	localProjects, err := store.LocalProjects(ctx, alice, 100, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	foundLocal := false
+	for _, item := range localProjects {
+		if item.SourceKind == "github" {
+			t.Fatal("GitHub scan appeared as local project")
+		}
+		if item.SourceName == "project" && item.SourceKind == "local" {
+			foundLocal = item.ScanID == localJob.ID && item.Name == "project" && item.High == 1 && item.ScanCount == 1
+		}
+	}
+	if !foundLocal {
+		t.Fatalf("local project missing from history: %+v", localProjects)
+	}
+	if inaccessible, e := store.LocalProjects(ctx, bob, 100, 0); e != nil || len(inaccessible) != 0 {
+		t.Fatalf("cross-user local history leaked: %+v %v", inaccessible, e)
+	}
+	// A later scan of the same source replaces its list summary, not its history.
+	rescan, err := store.EnqueueLocal(ctx, alice, repo.ID, "main", "project")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = store.Cancel(ctx, alice, repo.ID, rescan.ID); err != nil {
+		t.Fatal(err)
+	}
+	localProjects, err = store.LocalProjects(ctx, alice, 100, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range localProjects {
+		if item.SourceName == "project" && (item.ScanID != rescan.ID || item.ScanCount != 2 || item.Status != "cancelled" || item.High != 0) {
+			t.Fatalf("local source was not grouped by its latest scan: %+v", item)
+		}
+	}
+	if response := api(alice, "GET", "/api/v1/local-projects?page_size=1", ""); response.Code != 200 {
+		t.Fatalf("local history endpoint: %d %s", response.Code, response.Body)
 	}
 
 	// Labels are append-only, scoped to completed findings, and reviewer is authenticated.

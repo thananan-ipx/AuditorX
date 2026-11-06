@@ -1,0 +1,79 @@
+{
+  "schema_version": "auditorx-tree-v1",
+  "feature_contract": "priority-features-v1",
+  "model_version": "lecture_decision_tree_v1",
+  "dataset_kind": "simulated_source_lab",
+  "human_ground_truth": false,
+  "source_model_sha256": "d8a0ba7c24ecfd29f899575431e76bad6f6c48b29bf36f21dbe41cf8ae31c0f1",
+  "features": [
+    "severity",
+    "rule_family",
+    "category",
+    "language",
+    "file_type",
+    "rule_count_in_scan",
+    "repository_criticality",
+    "exposure",
+    "impact"
+  ],
+  "encoded_features": [
+    "category=Manual review",
+    "category=Security",
+    "exposure=test_only",
+    "file_type=ts",
+    "file_type=tsx",
+    "impact=unknown",
+    "language=typescript",
+    "repository_criticality=low",
+    "rule_count_in_scan",
+    "rule_family=auditorx.nextjs.review.server-action-access",
+    "rule_family=auditorx.nextjs.security.public-secret",
+    "rule_family=auditorx.nextjs.security.request-html",
+    "rule_family=auditorx.nextjs.security.request-redirect",
+    "rule_family=security.sql-template-interpolation",
+    "severity=High",
+    "severity=Low",
+    "severity=Medium"
+  ],
+  "classes": [
+    "High",
+    "Low",
+    "Medium"
+  ],
+  "training_rows": 6,
+  "nodes": [
+    {
+      "left": 1,
+      "right": 2,
+      "feature": 16,
+      "threshold": 0.5,
+      "values": [
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
+      ]
+    },
+    {
+      "left": -1,
+      "right": -1,
+      "feature": -2,
+      "threshold": -2.0,
+      "values": [
+        0.5,
+        0.5,
+        0.0
+      ]
+    },
+    {
+      "left": -1,
+      "right": -1,
+      "feature": -2,
+      "threshold": -2.0,
+      "values": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  ]
+}

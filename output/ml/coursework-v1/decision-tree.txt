@@ -1,0 +1,4 @@
+|--- severity=Medium <= 0.50
+|   |--- class: High
+|--- severity=Medium >  0.50
+|   |--- class: Medium

@@ -1,0 +1,74 @@
+{
+  "name": "lab-sql",
+  "case_family": "sql",
+  "split": "train",
+  "clone_group": "sql",
+  "expected_rule": "auditorx.javascript.security.sql-template-interpolation",
+  "notes": "Mock SQL sink only: proves scanner coverage, not a working SQL injection.",
+  "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-sql",
+  "variants": [
+    {
+      "unsafe_file": "variants/criticality-low-impact-low/app/api/unsafe/sql/route.ts",
+      "fixed_file": "variants/criticality-low-impact-low/app/api/fixed/sql/route.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-medium/app/api/unsafe/sql/route.ts",
+      "fixed_file": "variants/criticality-low-impact-medium/app/api/fixed/sql/route.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-high/app/api/unsafe/sql/route.ts",
+      "fixed_file": "variants/criticality-low-impact-high/app/api/fixed/sql/route.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-low/app/api/unsafe/sql/route.ts",
+      "fixed_file": "variants/criticality-normal-impact-low/app/api/fixed/sql/route.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-medium/app/api/unsafe/sql/route.ts",
+      "fixed_file": "variants/criticality-normal-impact-medium/app/api/fixed/sql/route.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-high/app/api/unsafe/sql/route.ts",
+      "fixed_file": "variants/criticality-normal-impact-high/app/api/fixed/sql/route.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-low/app/api/unsafe/sql/route.ts",
+      "fixed_file": "variants/criticality-high-impact-low/app/api/fixed/sql/route.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-medium/app/api/unsafe/sql/route.ts",
+      "fixed_file": "variants/criticality-high-impact-medium/app/api/fixed/sql/route.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-high/app/api/unsafe/sql/route.ts",
+      "fixed_file": "variants/criticality-high-impact-high/app/api/fixed/sql/route.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "high"
+    }
+  ]
+}

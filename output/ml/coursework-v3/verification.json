@@ -1,0 +1,27 @@
+{
+  "model_version": "lecture_decision_tree_v3",
+  "split_rows": {
+    "train": 75,
+    "validation": 18,
+    "test": 18
+  },
+  "serving_parity_rows": 111,
+  "all_tests_have_disjoint_clone_groups": true,
+  "service_http_status": 200,
+  "test_macro_f1": {
+    "severity_baseline": 0.4166666666666667,
+    "decision_tree": 0.9555555555555556,
+    "random_forest": 0.8825396825396825
+  },
+  "model_sha256": "08c06b24f6772654ebd57893c341293dd71750a215d09c72a4830567c17f70b2",
+  "deployment": "exported candidate; live service unchanged",
+  "limitations": [
+    "Twelve derived source fixture projects, not twelve independently developed production apps.",
+    "Nine context copies per family are correlated; families and unsafe/fixed pairs stay in one split.",
+    "Shared mock boilerplate is not an example and is never used as a model feature.",
+    "Labels come from a declared simulator rubric, not human ground truth.",
+    "Family templates were examined previously; evaluation is not a new blind real-project benchmark.",
+    "Scores measure reproduction of the rubric, not real-world vulnerability severity or repair value.",
+    "Supplemental inventory-card labels are assistant-authored, test-only and training-only."
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "name": "lab-logging",
+  "case_family": "logging",
+  "split": "validation",
+  "clone_group": "logging",
+  "expected_rule": "auditorx.javascript.coding-standard.sensitive-logging",
+  "notes": "Hypothetical real credential logging; use fake form values only.",
+  "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-logging",
+  "variants": [
+    {
+      "unsafe_file": "variants/criticality-low-impact-low/app/api/unsafe/logging/route.ts",
+      "fixed_file": "variants/criticality-low-impact-low/app/api/fixed/logging/route.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-medium/app/api/unsafe/logging/route.ts",
+      "fixed_file": "variants/criticality-low-impact-medium/app/api/fixed/logging/route.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-high/app/api/unsafe/logging/route.ts",
+      "fixed_file": "variants/criticality-low-impact-high/app/api/fixed/logging/route.ts",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-low/app/api/unsafe/logging/route.ts",
+      "fixed_file": "variants/criticality-normal-impact-low/app/api/fixed/logging/route.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-medium/app/api/unsafe/logging/route.ts",
+      "fixed_file": "variants/criticality-normal-impact-medium/app/api/fixed/logging/route.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-high/app/api/unsafe/logging/route.ts",
+      "fixed_file": "variants/criticality-normal-impact-high/app/api/fixed/logging/route.ts",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-low/app/api/unsafe/logging/route.ts",
+      "fixed_file": "variants/criticality-high-impact-low/app/api/fixed/logging/route.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-medium/app/api/unsafe/logging/route.ts",
+      "fixed_file": "variants/criticality-high-impact-medium/app/api/fixed/logging/route.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-high/app/api/unsafe/logging/route.ts",
+      "fixed_file": "variants/criticality-high-impact-high/app/api/fixed/logging/route.ts",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "high"
+    }
+  ]
+}

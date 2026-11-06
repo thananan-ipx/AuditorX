@@ -1,0 +1,74 @@
+{
+  "name": "lab-public-secret",
+  "case_family": "public-secret",
+  "split": "train",
+  "clone_group": "public-secret",
+  "expected_rule": "auditorx.nextjs.security.public-secret",
+  "notes": "Secret-like public name; the actual value is fake and has no authority.",
+  "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-public-secret",
+  "variants": [
+    {
+      "unsafe_file": "variants/criticality-low-impact-low/app/unsafe/public-secret/page.tsx",
+      "fixed_file": "variants/criticality-low-impact-low/app/fixed/public-secret/page.tsx",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-medium/app/unsafe/public-secret/page.tsx",
+      "fixed_file": "variants/criticality-low-impact-medium/app/fixed/public-secret/page.tsx",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-high/app/unsafe/public-secret/page.tsx",
+      "fixed_file": "variants/criticality-low-impact-high/app/fixed/public-secret/page.tsx",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-low/app/unsafe/public-secret/page.tsx",
+      "fixed_file": "variants/criticality-normal-impact-low/app/fixed/public-secret/page.tsx",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-medium/app/unsafe/public-secret/page.tsx",
+      "fixed_file": "variants/criticality-normal-impact-medium/app/fixed/public-secret/page.tsx",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-high/app/unsafe/public-secret/page.tsx",
+      "fixed_file": "variants/criticality-normal-impact-high/app/fixed/public-secret/page.tsx",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-low/app/unsafe/public-secret/page.tsx",
+      "fixed_file": "variants/criticality-high-impact-low/app/fixed/public-secret/page.tsx",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-medium/app/unsafe/public-secret/page.tsx",
+      "fixed_file": "variants/criticality-high-impact-medium/app/fixed/public-secret/page.tsx",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-high/app/unsafe/public-secret/page.tsx",
+      "fixed_file": "variants/criticality-high-impact-high/app/fixed/public-secret/page.tsx",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "high"
+    }
+  ]
+}

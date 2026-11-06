@@ -27,7 +27,7 @@ import { useLanguage } from "@/lib/i18n";
 
 type PageState = { kind: "loading" } | { kind: "error"; error: unknown } | DashboardResult;
 
-export default function DashboardPage({ repositoryID }: { repositoryID?: string }) {
+export default function DashboardPage({ repositoryID, initialScanID }: { repositoryID?: string; initialScanID?: string }) {
   const { t } = useLanguage();
   const [state, setState] = useState<PageState>({ kind: "loading" });
   const [revision, setRevision] = useState(0);
@@ -68,7 +68,7 @@ export default function DashboardPage({ repositoryID }: { repositoryID?: string 
           {state.capabilities.repository_storage === "prototype" && <ModeNotice capabilities={state.capabilities} />}
           {state.kind === "empty" ? <EmptyRepositories canCreate={state.capabilities.repository_creation} />
             : state.kind === "unscanned" ? <UnscannedRepository repository={state.repository} />
-            : state.kind === "scans" ? <RepositoryScans key={state.repository.id} repository={state.repository} />
+            : state.kind === "scans" ? <RepositoryScans key={`${state.repository.id}:${initialScanID ?? "latest"}`} repository={state.repository} initialScanID={initialScanID} />
             : <>
               {scanStatus && <Feedback>{scanStatus}</Feedback>}
               <DashboardContent dashboard={state.dashboard} issues={state.issues} scanBusy={scanBusy} demo={state.capabilities.repository_storage === "prototype"} startScan={startScan} />

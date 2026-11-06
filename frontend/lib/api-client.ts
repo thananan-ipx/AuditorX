@@ -12,11 +12,11 @@ export async function apiClient<T>(path: string, init?: RequestInit): Promise<T>
 }
 
 /** Like apiClient, but also returns the response `meta` (e.g. total counts). */
-export async function apiClientPage<T>(path: string, init?: RequestInit): Promise<{ data: T; meta: Record<string, number> }> {
+export async function apiClientPage<T>(path: string, init?: RequestInit): Promise<{ data: T; meta: Record<string, unknown> }> {
   return request<T>(path, init);
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<{ data: T; meta: Record<string, number> }> {
+async function request<T>(path: string, init?: RequestInit): Promise<{ data: T; meta: Record<string, unknown> }> {
   const headers = new Headers(init?.headers);
   if (!headers.has("Content-Type") && !(init?.body instanceof FormData)) headers.set("Content-Type", "application/json");
 

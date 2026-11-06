@@ -1,0 +1,30 @@
+{
+  "schema_version": "nextjs-source-lab-candidates-v1",
+  "scan_id": "d323821f-2669-40d0-92fe-e5c2622e57f2",
+  "actual_semgrep_findings": 25,
+  "primary_candidates": 12,
+  "proposed_class_distribution": {
+    "High": 6,
+    "Medium": 3,
+    "Low": 3
+  },
+  "label_source": "authored_lab_scenario_not_human_ground_truth",
+  "sha256": "0d74977f16498f84fd748b412f538892b52366be572cb566d03e90ea80e5848f",
+  "limitations": [
+    "Teaching scenarios, not real production findings.",
+    "Proposed priorities require review and are not accepted human labels.",
+    "No train/test split is claimed for this small single-project seed."
+  ],
+  "weak_label_experiment": {
+    "label_source": "authored_source_lab_scenario_v1",
+    "human_ground_truth": false,
+    "split_rows": {
+      "train": 6,
+      "validation": 3,
+      "test": 3
+    },
+    "selected_model": "logistic_regression",
+    "test_macro_f1": 0.2222222222222222,
+    "severity_baseline_test_macro_f1": 0.3333333333333333
+  }
+}

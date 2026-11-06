@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Box, FolderGit2, GitBranch, Loader, Plus, RefreshCw, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Typography } from "@/components/ui/typography";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ApiError } from "@/lib/api-client";
@@ -20,6 +21,7 @@ import type { Capabilities, Repository } from "../types";
 import { defaultFilters, filterRepositories, summarize, type ListFilters, type ScanFilter, type SortKey } from "../repository-list";
 import { EmptyRepositories, errorMessage, ModeNotice, WorkspaceError } from "../components/workspace-feedback";
 import { GitHubRepositories } from "@/features/github/components/github-repositories";
+import { LocalProjects } from "../components/local-projects";
 
 type ListState = { kind: "loading" } | { kind: "error"; error: unknown } | {
   kind: "ready"; capabilities: Capabilities; repositories: Repository[]; total: number | null;
@@ -62,7 +64,7 @@ export default function RepositoriesPage() {
   const filtered = filters.query !== "" || filters.access !== "all" || filters.scan !== "all";
 
   return <div className="min-w-0 space-y-6">
-    <PageHeader title={t("Repositories")} icon={GitBranch} description={t("Choose a repository to open its dashboard, or register a GitHub URL.")}
+    <PageHeader title={t("Repositories")} icon={GitBranch} description={t("Open a local project or GitHub repository to review its scans.")}
       actions={<>
         <Button variant="outline" onClick={reload} disabled={state.kind === "loading"}><RefreshCw size={14} aria-hidden="true" />{t("Refresh list")}</Button>
         {canCreate && <Button onClick={() => setAddOpen(true)}><Plus size={16} aria-hidden="true" />{t("Add repository")}</Button>}
@@ -77,8 +79,9 @@ export default function RepositoriesPage() {
         <StatCard label={t("High findings")} value={stats.high} icon={ShieldAlert} hint={t("Latest completed scans")} />
         <StatCard label={t("Never scanned")} value={stats.neverScanned} icon={Box} />
       </section>}
+      {ready.capabilities.repository_storage === "postgres" && ready.capabilities.scan_queue && <LocalProjects />}
       <section aria-labelledby="repository-list-title" className="space-y-4">
-        <h2 id="repository-list-title" className="sr-only">{t("Your repositories")}</h2>
+        <Typography variant="section-title" id="repository-list-title">{t("Your repositories")}</Typography>
         {ready.repositories.length === 0
           ? page === 1 ? <EmptyRepositories canCreate={ready.capabilities.repository_creation} onAdd={() => setAddOpen(true)} /> : <p className="rounded-xl border bg-card p-8 text-muted-foreground type-body-sm">{t("No more repositories. Go back to the previous page.")}</p>
           : <>

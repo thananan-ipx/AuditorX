@@ -1,11 +1,16 @@
 import { apiClient, apiClientPage } from "@/lib/api-client";
 import type { Capabilities, Repository } from "../types";
+import type { LocalProject } from "../local-projects";
 
 export const PAGE_SIZE = 20;
 /** The table loads a full API page so search and filters cover every row on it. */
 export const TABLE_PAGE_SIZE = 100;
 
 export const repositoryService = {
+  localProjects: async (page = 1, signal?: AbortSignal) => {
+    const result = await apiClientPage<LocalProject[]>(`/api/v1/local-projects?page=${page}&page_size=${TABLE_PAGE_SIZE}`, { signal, cache: "no-store" });
+    return { items: result.data, hasNext: result.meta.has_next === true };
+  },
   capabilities: (signal?: AbortSignal) => apiClient<Capabilities>("/api/v1/capabilities", { signal, cache: "no-store" }),
   list: (page = 1, signal?: AbortSignal) => apiClient<Repository[]>(`/api/v1/repositories?page=${page}&page_size=${PAGE_SIZE}`, { signal, cache: "no-store" }),
   listPage: async (page = 1, signal?: AbortSignal) => {
@@ -19,6 +24,6 @@ export const repositoryService = {
   }),
 };
 
-export function dashboardHref(id: string) {
-  return `/dashboard?repository=${encodeURIComponent(id)}`;
+export function dashboardHref(id: string, scanID?: string) {
+  return `/dashboard?repository=${encodeURIComponent(id)}${scanID ? `&scan=${encodeURIComponent(scanID)}` : ""}`;
 }

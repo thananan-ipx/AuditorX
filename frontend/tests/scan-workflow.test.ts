@@ -41,6 +41,17 @@ function harness(overrides: Partial<typeof scanService> = {}, canWrite = true) {
     tick: () => { const fn = callback; callback = undefined; fn?.(); } };
 }
 
+test("deep-linked local scan is opened even when it is older than the recent history page", async t => {
+  const h = harness({list:async () => [job("completed","recent-other-project")], get:async (_repo,id) => job("completed",id)});
+  t.after(h.controller.stop);
+  h.controller.start("older-local-scan");
+  await settle();
+  assert.equal(h.controller.getSnapshot().selected?.id,"older-local-scan");
+  assert.deepEqual(h.controller.getSnapshot().jobs.map(scan => scan.id),["older-local-scan","recent-other-project"]);
+  assert.equal(h.calls.findings,1);
+  assert.equal(h.calls.start,0);
+});
+
 test("scan service encodes IDs, sends cookies, no-store reads and abort signals", async (t) => {
   const seen: { path: string; init?: RequestInit }[] = [];
   t.mock.method(globalThis, "fetch", async (input: string | URL | Request, init?: RequestInit) => {

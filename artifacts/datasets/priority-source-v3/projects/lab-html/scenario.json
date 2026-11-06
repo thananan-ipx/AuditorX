@@ -1,0 +1,74 @@
+{
+  "name": "lab-html",
+  "case_family": "html",
+  "split": "train",
+  "clone_group": "html",
+  "expected_rule": "auditorx.nextjs.security.request-html",
+  "notes": "Hypothetical public HTML preview; fixed variant renders escaped text.",
+  "local_scan_path": "auditor-x/artifacts/datasets/priority-source-v3/projects/lab-html",
+  "variants": [
+    {
+      "unsafe_file": "variants/criticality-low-impact-low/app/unsafe/html/page.tsx",
+      "fixed_file": "variants/criticality-low-impact-low/app/fixed/html/page.tsx",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-medium/app/unsafe/html/page.tsx",
+      "fixed_file": "variants/criticality-low-impact-medium/app/fixed/html/page.tsx",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-low-impact-high/app/unsafe/html/page.tsx",
+      "fixed_file": "variants/criticality-low-impact-high/app/fixed/html/page.tsx",
+      "repository_criticality": "low",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-low/app/unsafe/html/page.tsx",
+      "fixed_file": "variants/criticality-normal-impact-low/app/fixed/html/page.tsx",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-medium/app/unsafe/html/page.tsx",
+      "fixed_file": "variants/criticality-normal-impact-medium/app/fixed/html/page.tsx",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-normal-impact-high/app/unsafe/html/page.tsx",
+      "fixed_file": "variants/criticality-normal-impact-high/app/fixed/html/page.tsx",
+      "repository_criticality": "normal",
+      "exposure": "test_only",
+      "impact": "high"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-low/app/unsafe/html/page.tsx",
+      "fixed_file": "variants/criticality-high-impact-low/app/fixed/html/page.tsx",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "low"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-medium/app/unsafe/html/page.tsx",
+      "fixed_file": "variants/criticality-high-impact-medium/app/fixed/html/page.tsx",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "medium"
+    },
+    {
+      "unsafe_file": "variants/criticality-high-impact-high/app/unsafe/html/page.tsx",
+      "fixed_file": "variants/criticality-high-impact-high/app/fixed/html/page.tsx",
+      "repository_criticality": "high",
+      "exposure": "test_only",
+      "impact": "high"
+    }
+  ]
+}

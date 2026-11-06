@@ -58,6 +58,30 @@ class CourseworkChecks(unittest.TestCase):
                 model = pickle.load(f)
             self.assertEqual(course.scores(y, model.predict(x)), metrics["test_results"][name])
 
+    def test_supplement_keeps_evaluation_frozen_and_rejects_overlap(self):
+        splits = course.load_data(self.path)
+        original = {key: [row.copy() for row in value] for key, value in splits.items()}
+        row = {**self.rows[0], "repository_group": "new-project", "scan_id": "new-scan",
+               "finding_fingerprint": "a" * 64, "priority_label": "Low"}
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "additional.csv"
+            def write(rows):
+                with path.open("w", encoding="utf-8", newline="") as handle:
+                    writer = csv.DictWriter(handle, fieldnames=list(row))
+                    writer.writeheader(); writer.writerows(rows)
+            write([row])
+            course.add_training_data(splits, path)
+            self.assertEqual(splits["validation"], original["validation"])
+            self.assertEqual(splits["test"], original["test"])
+            self.assertEqual(len(splits["train"]), 7)
+            for invalid in ([row], [{**row, "review_status": "accepted"}],
+                            [{**row, "repository_group": self.rows[0]["repository_group"]}],
+                            [{**row, "finding_fingerprint": "b" * 64},
+                             {**row, "finding_fingerprint": "c" * 64, "scan_id": "other-scan"}]):
+                write(invalid)
+                with self.assertRaises(ValueError):
+                    course.add_training_data(splits, path)
+
 
 if __name__ == "__main__":
     unittest.main()
