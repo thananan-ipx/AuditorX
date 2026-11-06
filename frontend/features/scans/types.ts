@@ -1,6 +1,7 @@
 export type ScanStatus = "queued" | "running" | "completed" | "failed" | "cancelled";
 
 export type Scan = {
+  prediction_context?: import("./service/prediction-service").PredictionContext;
   /** Null/missing on historical scans; never infer scope from findings. */
   source_languages?: import("./rule-catalog").SourceLanguage[] | null;
   checked_rule_ids?: string[] | null;

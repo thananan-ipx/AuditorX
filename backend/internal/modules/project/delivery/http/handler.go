@@ -84,7 +84,14 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	if items == nil {
 		items = []entity.Repository{}
 	}
-	response.JSON(w, http.StatusOK, map[string]any{"data": items, "meta": map[string]int{"page": page, "page_size": size, "count": len(items)}})
+	meta := map[string]int{"page": page, "page_size": size, "count": len(items)}
+	if total, ok, err := h.service.Total(r.Context()); err != nil {
+		writeError(w, err)
+		return
+	} else if ok {
+		meta["total"] = total
+	}
+	response.JSON(w, http.StatusOK, map[string]any{"data": items, "meta": meta})
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {

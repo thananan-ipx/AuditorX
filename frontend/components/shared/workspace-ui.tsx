@@ -1,6 +1,8 @@
-import { useId, type ComponentProps, type ReactNode } from "react";
+import { Fragment, useId, type ComponentProps, type ReactNode } from "react";
 import { ChevronDown, type LucideIcon } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { cn } from "@/lib/utils";
 
 /** Page-level hierarchy. Pass translated content, never feature-specific logic. */
@@ -61,4 +63,17 @@ export function Disclosure({ title, description, children, className, ...props }
 
 export function DataTable({ children, caption }: { children: ReactNode; caption: ReactNode }) {
   return <div data-slot="data-table" className="max-w-full overflow-x-auto rounded-xl border"><table className="w-full text-left type-body-sm"><caption className="sr-only">{caption}</caption>{children}</table></div>;
+}
+
+/** Trail from the workspace down to the current page; the last item is the current page. */
+export function Crumbs({ items }: { items: { label: ReactNode; href?: string }[] }) {
+  return <Breadcrumb><BreadcrumbList className="type-caption">
+    {items.map((item, index) => {
+      const last = index === items.length - 1;
+      return <Fragment key={index}>
+        <BreadcrumbItem className="min-w-0">{last || !item.href ? <BreadcrumbPage className="break-all">{item.label}</BreadcrumbPage> : <BreadcrumbLink asChild><Link href={item.href}>{item.label}</Link></BreadcrumbLink>}</BreadcrumbItem>
+        {!last && <BreadcrumbSeparator />}
+      </Fragment>;
+    })}
+  </BreadcrumbList></Breadcrumb>;
 }

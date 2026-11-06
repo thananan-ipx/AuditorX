@@ -98,6 +98,25 @@ func TestPostgresIntegration(t *testing.T) {
 	if err != nil || len(items) != 1 || items[0].ID != created.ID {
 		t.Fatalf("owner list: %v %+v", err, items)
 	}
+	if items[0].LatestScan != nil {
+		t.Fatalf("unscanned repository has a latest scan: %+v", items[0].LatestScan)
+	}
+	if total, err := directory.Count(ctx, alice); err != nil || total != 1 {
+		t.Fatalf("owner count: %d %v", total, err)
+	}
+	var scanID string
+	if err := pool.QueryRow(ctx, `INSERT INTO public.scan_jobs (repository_id, requested_by, branch, status, commit_sha, scanner_version, finished_at)
+		VALUES ($1::uuid, $2::uuid, 'develop', 'completed', repeat('a', 40), 'test', now()) RETURNING id::text`, created.ID, alice).Scan(&scanID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `INSERT INTO public.scan_findings (scan_id, repository_id, fingerprint, rule_id, severity, file_path, start_line, end_line, message)
+		SELECT $1::uuid, $2::uuid, repeat(n::text, 64), 'rule', sev, 'a.go', 1, 1, 'm' FROM (VALUES ('1','High'),('2','High'),('3','Low')) v(n, sev)`, scanID, created.ID); err != nil {
+		t.Fatal(err)
+	}
+	items, err = svc.List(aCtx, 1, 20)
+	if err != nil || len(items) != 1 || items[0].LatestScan == nil || items[0].LatestScan.Status != "completed" || items[0].LatestScan.High != 2 || items[0].LatestScan.Medium != 0 || items[0].LatestScan.Low != 1 {
+		t.Fatalf("latest scan summary: %v %+v", err, items)
+	}
 
 	// Confirm the actual pooled connection has no leftover actor after failed/successful calls.
 	var role, userID string

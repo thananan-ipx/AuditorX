@@ -127,3 +127,23 @@ func TestPersistentModeDoesNotFabricateScanResults(t *testing.T) {
 		t.Fatal(res.Body.String())
 	}
 }
+
+type countingStore struct{ stubStore }
+
+func (countingStore) Count(context.Context, string) (int, error) { return 42, nil }
+
+func TestListReportsTotalWhenStoreCanCount(t *testing.T) {
+	res := request(&stubStore{}, alice, "GET", "/api/v1/repositories", "")
+	if strings.Contains(res.Body.String(), `"total"`) {
+		t.Fatal("total must be omitted when the store cannot count", res.Body.String())
+	}
+	mux := http.NewServeMux()
+	NewHandler(service.New(&countingStore{})).RegisterRoutes(mux)
+	req := httptest.NewRequest("GET", "/api/v1/repositories", nil)
+	req = req.WithContext(identity.WithUserID(req.Context(), alice))
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, req)
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), `"total":42`) {
+		t.Fatal(rec.Code, rec.Body.String())
+	}
+}

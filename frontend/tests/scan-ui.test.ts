@@ -95,11 +95,11 @@ test("finding filters combine severity and case-insensitive file/rule/message se
   assert.equal(filterFindings([finding, low], "All", "").length, 2);
 });
 
-test("findings are paginated to 50 rows and all severity totals remain visible", () => {
+test("default fix queue is paginated to 50 rows in stable file order while predictions load", () => {
   const findings = Array.from({ length: 51 }, (_, i) => ({ ...finding, fingerprint: `fp${i}`, file: `file-${i}.py` }));
   const html = render({ ...ready, findings });
   assert.match(html, /file-49.py/);
-  assert.doesNotMatch(html, /file-50.py/);
+  assert.doesNotMatch(html, /file-9.py/);
   assert.match(html, /Page 1 of 2/);
   assert.match(html, /51 of 51 findings match/);
 });
@@ -121,7 +121,7 @@ test("Go coverage includes zero-finding rules but never Python or JavaScript che
 });
 
 test("historical scans show unknown coverage without inferring it from findings", () => {
-  const html = render(ready);
+  const html = renderToStaticMarkup(createElement(RuleCoverage, { scan, findings: [finding] }));
   assert.match(html, /did not record its language and rule coverage/);
   assert.doesNotMatch(html, /Every rule below ran|TLS certificate checks disabled|Running text as code/);
 });
@@ -151,4 +151,13 @@ test("Next.js coverage is opt-in through recorded rule IDs and labels manual che
 test("Next.js advisory findings remain marked as requiring review", () => {
   const review = { ...finding, rule_id: "auditorx.nextjs.review.server-action-access", severity: "Low" as const, message: "Manual review required for this Server Action." };
   assert.match(render({ ...ready, findings: [review] }), /Review required/);
+});
+
+test("project header shows a breadcrumb and scan history is a selectable list", () => {
+  const html = render(ready);
+  assert.match(html, /aria-label="breadcrumb"/);
+  assert.match(html, /href="\/repositories"/);
+  assert.match(html, /<ul id="scan-history"/);
+  assert.match(html, /aria-current="true"/);
+  assert.match(html, /scan-1/);
 });

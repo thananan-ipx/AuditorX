@@ -3,7 +3,7 @@ import { Typography } from "@/components/ui/typography";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Feedback } from "@/components/shared/feedback";
-import { PageHeader } from "@/components/shared/workspace-ui";
+import { PageHeader, Crumbs } from "@/components/shared/workspace-ui";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -64,7 +64,7 @@ export default function DashboardPage({ repositoryID }: { repositoryID?: string 
       {state.kind === "loading" ? <DashboardSkeleton /> : state.kind === "error"
         ? <WorkspaceError error={state.error} returnTo={repositoryID ? dashboardHref(repositoryID) : "/dashboard"} retry={() => { setState({ kind: "loading" }); setRevision((value) => value + 1); }} />
         : <>
-          {state.kind === "scans" ? null : state.kind === "ready" ? <div className="flex justify-end"><Button asChild variant="ghost" size="sm"><Link href="/repositories">{t("Choose repository")} <ArrowRight size={14} /></Link></Button></div> : <PageHeader title={t("Workspace overview")} description={state.kind === "empty" ? t("Choose a repository to start reviewing code.") : `${state.repository.owner} / ${state.repository.name}`} actions={<Button asChild variant="outline"><Link href="/repositories">{t("Choose repository")} <ArrowRight size={14} /></Link></Button>} />}
+          {state.kind === "scans" || state.kind === "ready" ? null : <PageHeader title={state.kind === "unscanned" ? state.repository.name : t("Workspace overview")} eyebrow={<Crumbs items={state.kind === "unscanned" ? [{ label: t("Repositories"), href: "/repositories" }, { label: `${state.repository.owner} / ${state.repository.name}` }] : [{ label: t("Workspace"), href: "/dashboard" }, { label: t("Overview") }]} />} description={state.kind === "empty" ? t("Choose a repository to start reviewing code.") : `${state.repository.owner} / ${state.repository.name}`} actions={<Button asChild variant="outline"><Link href="/repositories">{t("Choose repository")} <ArrowRight size={14} /></Link></Button>} />}
           {state.capabilities.repository_storage === "prototype" && <ModeNotice capabilities={state.capabilities} />}
           {state.kind === "empty" ? <EmptyRepositories canCreate={state.capabilities.repository_creation} />
             : state.kind === "unscanned" ? <UnscannedRepository repository={state.repository} />
@@ -86,8 +86,8 @@ function DashboardContent({ dashboard, issues, scanBusy, demo, startScan }: { da
     <>
       <section className="mb-7 flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
         <div>
-          <div className="mb-2 flex items-center gap-2 text-muted-foreground type-body-sm"><span>{t("Workspace")}</span><span>/</span><span>{dashboard.repository.owner}</span></div>
-          <Typography variant="page-title" as="h1" className="break-all text-slate-950">{dashboard.repository.name} {t("Overview").toLowerCase()}</Typography>
+          <div className="mb-2"><Crumbs items={[{ label: t("Repositories"), href: "/repositories" }, { label: `${dashboard.repository.owner} / ${dashboard.repository.name}` }]} /></div>
+          <Typography variant="page-title" as="h1" className="break-all text-foreground">{dashboard.repository.name} {t("Overview").toLowerCase()}</Typography>
           <p className="mt-1.5 text-muted-foreground type-body-sm">{t("Here’s what changed in your codebase since the last scan.")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -123,17 +123,17 @@ function DashboardContent({ dashboard, issues, scanBusy, demo, startScan }: { da
               <div className="pointer-events-none absolute inset-0 flex flex-col justify-between pb-0 text-slate-300 type-caption"><span className="border-t border-dashed" /><span className="border-t border-dashed" /><span className="border-t border-dashed" /><span /></div>
               {dashboard.trend.map((point, index) => (
                 <div key={point.date} className="relative z-10 flex h-full flex-1 flex-col items-center justify-end gap-2">
-                  <span className="font-semibold text-slate-700 type-caption">{point.quality_score}</span>
+                  <span className="font-semibold text-foreground/80 type-caption">{point.quality_score}</span>
                   <div className="group relative flex w-full max-w-14 items-end justify-center">
-                    <div className="w-full rounded-t-md bg-[#c9f060] transition-all group-hover:bg-[#b9df53]" style={{ height: `${(point.quality_score / 100) * 150}px` }} />
-                    <div className="absolute bottom-0 w-2 rounded-t bg-[#20332a]" style={{ height: `${(point.issue_count / maxIssue) * 90}px` }} />
+                    <div className="w-full rounded-t-md bg-highlight transition-all group-hover:bg-highlight/80" style={{ height: `${(point.quality_score / 100) * 150}px` }} />
+                    <div className="absolute bottom-0 w-2 rounded-t bg-primary" style={{ height: `${(point.issue_count / maxIssue) * 90}px` }} />
                   </div>
                   <span className="absolute -bottom-6 whitespace-nowrap text-muted-foreground type-caption">{point.date}</span>
-                  {index === dashboard.trend.length - 1 && <span className="absolute right-0 top-1 rounded bg-[#20332a] px-2 py-1 text-white type-caption">{t("Latest")}</span>}
+                  {index === dashboard.trend.length - 1 && <span className="absolute right-0 top-1 rounded bg-primary px-2 py-1 text-primary-foreground type-caption">{t("Latest")}</span>}
                 </div>
               ))}
             </div>
-            <div className="mt-9 flex gap-5 text-muted-foreground type-caption"><span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-[#c9f060]" />{t("Quality score")}</span><span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-[#20332a]" />{t("Open issues")}</span></div>
+            <div className="mt-9 flex gap-5 text-muted-foreground type-caption"><span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-highlight" />{t("Quality score")}</span><span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-primary" />{t("Open issues")}</span></div>
           </CardContent>
         </Card>
         <AISummaryCard dashboard={dashboard} />
@@ -149,7 +149,7 @@ function DashboardContent({ dashboard, issues, scanBusy, demo, startScan }: { da
 
 function QualityCard({ score }: { score: number }) {
   const { t } = useLanguage();
-  return <Card><CardHeader><CardDescription>{t("Code quality score")}</CardDescription></CardHeader><CardContent className="flex items-center gap-5"><div className="relative grid size-28 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(#98c93c ${score * 3.6}deg, #e9ede4 0)` }}><div className="grid size-[86px] place-items-center rounded-full bg-white"><div className="text-center"><div className="type-metric">{score}</div><div className="text-muted-foreground type-caption">{t("out of 100")}</div></div></div></div><div><Badge className="mb-3 border-lime-200 bg-lime-50 text-lime-800">{t("Good")}</Badge><p className="type-label">+3.5 points</p><p className="mt-1 text-muted-foreground type-caption">{t("Improved since the previous scan. Keep addressing high-priority findings.")}</p></div></CardContent></Card>;
+  return <Card><CardHeader><CardDescription>{t("Code quality score")}</CardDescription></CardHeader><CardContent className="flex items-center gap-5"><div className="relative grid size-28 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(var(--primary) ${score * 3.6}deg, var(--muted) 0)` }}><div className="grid size-[86px] place-items-center rounded-full bg-card"><div className="text-center"><div className="type-metric">{score}</div><div className="text-muted-foreground type-caption">{t("out of 100")}</div></div></div></div><div><Badge className="mb-3 border-lime-200 bg-lime-50 text-lime-800">{t("Good")}</Badge><p className="text-muted-foreground type-caption">{t("Keep addressing high-priority findings first.")}</p></div></CardContent></Card>;
 }
 
 function IssueSummary({ data, total }: { data: Record<string, number>; total: number }) {
@@ -165,12 +165,12 @@ function PrioritySummary({ data, model }: { data: Record<string, number>; model:
 function AISummaryCard({ dashboard }: { dashboard: Dashboard }) {
   const { t } = useLanguage();
   const ai = dashboard.ai_summary;
-  return <Card className="overflow-hidden border-[#dbe9bd] bg-[#f4f8e9]"><CardHeader className="border-b border-[#dbe9bd]"><div className="flex items-center gap-3"><div className="grid size-9 place-items-center rounded-lg bg-[#20332a] text-[#c9f060]"><Bot size={18} /></div><div><CardTitle>{t("AI analysis")}</CardTitle><CardDescription>{t("Grounded in scan")} {dashboard.latest_scan.id}</CardDescription></div><Badge className="ml-auto border-emerald-200 bg-white/60 text-emerald-700"><span className="mr-1.5 size-1.5 rounded-full bg-emerald-500" />{t("Ready")}</Badge></div></CardHeader><CardContent className="pt-5"><p className="text-slate-700 type-body-sm">{ai.summary}</p><div className="mt-4 rounded-xl border border-[#dbe9bd] bg-white/60 p-3.5"><p className="mb-2 flex items-center gap-2 text-slate-700 type-overline"><ShieldCheck size={14} />{t("Top recommendation")}</p><p className="text-slate-900 type-label">{ai.recommended_priorities[0]}</p></div><Button variant="link" className="mt-4 flex items-center gap-1.5 font-semibold text-slate-800 type-caption">{t("Open full AI analysis")} <ArrowRight size={13} /></Button></CardContent></Card>;
+  return <Card className="overflow-hidden border-highlight-border bg-highlight-surface"><CardHeader className="border-b border-highlight-border"><div className="flex items-center gap-3"><div className="grid size-9 place-items-center rounded-lg bg-primary text-highlight"><Bot size={18} /></div><div><CardTitle>{t("AI analysis")}</CardTitle><CardDescription>{t("Grounded in scan")} {dashboard.latest_scan.id}</CardDescription></div><Badge className="ml-auto border-emerald-200 bg-white/60 text-emerald-700"><span className="mr-1.5 size-1.5 rounded-full bg-emerald-500" />{t("Ready")}</Badge></div></CardHeader><CardContent className="pt-5"><p className="text-foreground/80 type-body-sm">{ai.summary}</p><div className="mt-4 rounded-xl border border-highlight-border bg-white/60 p-3.5"><p className="mb-2 flex items-center gap-2 text-foreground/80 type-overline"><ShieldCheck size={14} />{t("Top recommendation")}</p><p className="text-foreground type-label">{ai.recommended_priorities[0]}</p></div></CardContent></Card>;
 }
 
 function RecentIssues({ issues }: { issues: Issue[] }) {
   const { t } = useLanguage();
-  return <Card><CardHeader className="flex-row items-center justify-between"><div><CardTitle>{t("Priority issues")}</CardTitle><CardDescription>{t("Findings that need your attention first")}</CardDescription></div><Button variant="ghost" size="sm">{t("View all")} <ArrowRight size={14} /></Button></CardHeader><CardContent><div className="divide-y">{issues.slice(0, 4).map((issue) => <Button variant="ghost" key={issue.id} className="grid h-auto w-full whitespace-normal grid-cols-[1fr_auto] gap-3 py-3.5 text-left first:pt-0 last:pb-0 md:grid-cols-[1fr_90px_90px]"><div className="min-w-0"><p className="truncate text-slate-900 type-label">{issue.title}</p><p className="mt-1 truncate text-muted-foreground type-code">{issue.file}:{issue.line}</p></div><StatusBadge status={issue.severity} className="h-fit justify-self-end">{t(issue.severity)}</StatusBadge><div className="hidden items-center justify-end gap-1.5 text-muted-foreground md:flex type-caption"><span className="size-1.5 rounded-full bg-violet-500" />{t(issue.priority)}</div></Button>)}</div></CardContent></Card>;
+  return <Card><CardHeader className="flex-row items-center justify-between"><div><CardTitle>{t("Priority issues")}</CardTitle><CardDescription>{t("Findings that need your attention first")}</CardDescription></div></CardHeader><CardContent><div className="divide-y">{issues.slice(0, 4).map((issue) => <div key={issue.id} className="grid w-full grid-cols-[1fr_auto] gap-3 py-3.5 text-left first:pt-0 last:pb-0 md:grid-cols-[1fr_90px_90px]"><div className="min-w-0"><p className="truncate text-foreground type-label">{issue.title}</p><p className="mt-1 truncate text-muted-foreground type-code">{issue.file}:{issue.line}</p></div><StatusBadge status={issue.severity} className="h-fit justify-self-end">{t(issue.severity)}</StatusBadge><div className="hidden items-center justify-end gap-1.5 text-muted-foreground md:flex type-caption"><span className="size-1.5 rounded-full bg-violet-500" />{t(issue.priority)}</div></div>)}</div></CardContent></Card>;
 }
 
 function CategoryBreakdown({ data, total }: { data: Record<string, number>; total: number }) {

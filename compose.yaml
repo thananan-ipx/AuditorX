@@ -38,6 +38,7 @@ services:
     environment:
       DATABASE_URL: postgres://auditorx_api:${AUDITORX_DB_APP_PASSWORD:-auditorx-local-api}@postgres:5432/auditorx?sslmode=disable
       REPOSITORY_STORAGE: postgres
+      PREDICTION_SERVICE_URL: http://prediction:8090
       SCAN_QUEUE_ENABLED: ${SCAN_QUEUE_ENABLED:-true}
       LOCAL_SCAN_ENABLED: "true"
       LOCAL_SCAN_HOST_ROOT: ${AUDITORX_LOCAL_SOURCE_ROOT:-C:/Users/thana/Documents/GitHub/IProgressX}
@@ -88,6 +89,7 @@ services:
     environment:
       SCAN_WORKER_DATABASE_URL: postgres://auditorx_worker:${AUDITORX_DB_WORKER_PASSWORD:-auditorx-local-worker}@postgres:5432/auditorx?sslmode=disable
       LOCAL_SCAN_ROOT: /scan-sources
+      PREDICTION_SERVICE_URL: http://prediction:8090
       GITHUB_TOKEN_ENCRYPTION_KEY: ${GITHUB_TOKEN_ENCRYPTION_KEY:-}
     read_only: true
     volumes:
@@ -108,7 +110,26 @@ services:
       worker-setup:
         condition: service_completed_successfully
 
+  prediction:
+    build: ./prediction
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${AUDITORX_PREDICTION_PORT:-8090}:8090"
+    volumes:
+      - type: bind
+        source: ${AUDITORX_MODEL_FILE:-./output/ml/coursework-v1/service-model.json}
+        target: /models/service-model.json
+        read_only: true
+        bind:
+          create_host_path: false
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    pids_limit: 64
+
   web:
+    restart: unless-stopped
     build:
       context: ./frontend
       args:

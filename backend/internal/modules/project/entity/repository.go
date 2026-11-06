@@ -22,6 +22,17 @@ type Repository struct {
 	CreatedBy   string    `json:"created_by"`
 	AccessLevel string    `json:"access_level"`
 	CreatedAt   time.Time `json:"created_at"`
+	// LatestScan is only populated by List so the workspace can show scan state.
+	LatestScan *ScanSummary `json:"latest_scan,omitempty"`
+}
+
+// ScanSummary is the most recent scan of a repository with per-severity counts.
+type ScanSummary struct {
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"created_at"`
+	High      int       `json:"high"`
+	Medium    int       `json:"medium"`
+	Low       int       `json:"low"`
 }
 
 type CreateInput struct {

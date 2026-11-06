@@ -23,6 +23,9 @@
   --destructive: #b91c1c;
   --success: #3f6212;
   --warning: #92400e;
+  --highlight: #c9f060;
+  --highlight-surface: #f4f8e9;
+  --highlight-border: #dbe9bd;
   --radius: 0.625rem;
   --sidebar: #eef1eb;
   --sidebar-foreground: #34433b;
@@ -55,6 +58,9 @@
   --color-destructive: var(--destructive);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-highlight: var(--highlight);
+  --color-highlight-surface: var(--highlight-surface);
+  --color-highlight-border: var(--highlight-border);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);

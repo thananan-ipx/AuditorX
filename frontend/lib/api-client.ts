@@ -8,6 +8,15 @@ export class ApiError extends Error {
 }
 
 export async function apiClient<T>(path: string, init?: RequestInit): Promise<T> {
+  return (await request<T>(path, init)).data;
+}
+
+/** Like apiClient, but also returns the response `meta` (e.g. total counts). */
+export async function apiClientPage<T>(path: string, init?: RequestInit): Promise<{ data: T; meta: Record<string, number> }> {
+  return request<T>(path, init);
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<{ data: T; meta: Record<string, number> }> {
   const headers = new Headers(init?.headers);
   if (!headers.has("Content-Type") && !(init?.body instanceof FormData)) headers.set("Content-Type", "application/json");
 
@@ -27,7 +36,7 @@ export async function apiClient<T>(path: string, init?: RequestInit): Promise<T>
     typeof payload?.error?.code === "string" ? payload.error.code : undefined);
   }
 
-  if (response.status === 204) return null as T;
+  if (response.status === 204) return { data: null as T, meta: {} };
   const payload = await response.json();
-  return payload?.data as T;
+  return { data: payload?.data as T, meta: payload?.meta && typeof payload.meta === "object" ? payload.meta : {} };
 }

@@ -44,9 +44,9 @@ export function ModeNotice({ capabilities }: { capabilities: Capabilities }) {
     : <Feedback role="note" tone="success" className="mb-5">{t("Persistent workspace — only repositories you can access are listed. Registering a URL does not connect GitHub or scan its code.")}</Feedback>;
 }
 
-export function EmptyRepositories({ canCreate }: { canCreate: boolean }) {
+export function EmptyRepositories({ canCreate, onAdd }: { canCreate: boolean; onAdd?: () => void }) {
   const { t } = useLanguage();
-  return <EmptyState icon={Box} title={t("No repositories yet")} action={canCreate && <Button asChild><Link href="/repositories#add-repository">{t("Add repository")}</Link></Button>}>
+  return <EmptyState icon={Box} title={t("No repositories yet")} action={canCreate && (onAdd ? <Button onClick={onAdd}>{t("Add repository")}</Button> : <Button asChild><Link href="/repositories#add-repository">{t("Add repository")}</Link></Button>)}>
     {canCreate ? t("Add a GitHub repository to start organizing your workspace.") : t("There are no repositories available in this workspace.")}
   </EmptyState>;
 }

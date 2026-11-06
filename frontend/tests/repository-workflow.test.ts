@@ -157,3 +157,10 @@ test("IDs cannot inject routes or query parameters", async (t) => {
   await dashboardService.getIssues(id);
   await dashboardService.startScan(id, "main");
 });
+
+test("repository table page returns items with the API total", async (t) => {
+  t.mock.method(globalThis, "fetch", async () => new Response(JSON.stringify({ data: [repository], meta: { total: 7 } }), { status: 200 }));
+  assert.deepEqual(await repositoryService.listPage(1), { items: [repository], total: 7 });
+  t.mock.method(globalThis, "fetch", async () => new Response(JSON.stringify({ data: [repository] }), { status: 200 }));
+  assert.deepEqual(await repositoryService.listPage(1), { items: [repository], total: null });
+});

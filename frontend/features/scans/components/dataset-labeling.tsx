@@ -21,10 +21,10 @@ import { labelReadiness } from "../label-readiness";
 import { labelService } from "../service/label-service";
 import type { Finding, LabelInput, PriorityLabel, Scan } from "../types";
 
-export function DatasetLabeling({ scan, findings, canWrite }: { scan: Scan; findings: Finding[]; canWrite: boolean }) {
+export function DatasetLabeling({ scan, findings, canWrite, initialFingerprint }: { scan: Scan; findings: Finding[]; canWrite: boolean; initialFingerprint?: string }) {
   const { t } = useLanguage();
   const [labels, setLabels] = useState<PriorityLabel[]>([]);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(initialFingerprint ?? null);
   const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
   const [reload, setReload] = useState(0);
   const [query, setQuery] = useState("");
@@ -94,10 +94,10 @@ export function DatasetLabeling({ scan, findings, canWrite }: { scan: Scan; find
         {pageCount > 1 && <PagePagination page={currentPage} pageCount={pageCount} onPageChange={setPage} />}
       </>}
     </CardContent>
-    <Dialog open={!!finding} onOpenChange={value => { if (!value) requestClose(); }}>
+    <Dialog open={!!finding && phase === "ready"} onOpenChange={value => { if (!value) requestClose(); }}>
       <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl" showCloseButton={!saving}>
         <DialogHeader className="shrink-0 border-b px-6 py-5 pr-12"><DialogTitle>{t(canWrite ? "Review finding" : "View review")}</DialogTitle><DialogDescription className="break-all">{finding?.file}:{finding?.line}</DialogDescription></DialogHeader>
-        {finding && <ReviewForm key={`${finding.fingerprint}-${current?.id ?? "new"}`} finding={finding} current={current} defaultGroup={labels[0]?.repository_group ?? ""} canWrite={canWrite} discard={discard} onKeep={() => setDiscard(false)} onClose={close} onRequestClose={requestClose} onDirty={() => setDirty(true)} onBusy={setSaving} onSave={async (input, next) => {
+        {finding && <ReviewForm key={`${finding.fingerprint}-${current?.id ?? "new"}`} finding={finding} current={current} defaultGroup={labels[0]?.repository_group ?? ""} defaultContext={scan.prediction_context} canWrite={canWrite} discard={discard} onKeep={() => setDiscard(false)} onClose={close} onRequestClose={requestClose} onDirty={() => setDirty(true)} onBusy={setSaving} onSave={async (input, next) => {
           const saved = await labelService.save(scan, finding.fingerprint, input);
           if (!alive.current) return;
           setLabels(previous => [...previous.filter(label => label.fingerprint !== saved.fingerprint), saved]);
@@ -111,13 +111,13 @@ export function DatasetLabeling({ scan, findings, canWrite }: { scan: Scan; find
   </Card>;
 }
 
-function ReviewForm({ finding, current, defaultGroup, canWrite, discard, onKeep, onClose, onRequestClose, onDirty, onBusy, onSave }: {
-  finding: Finding; current?: PriorityLabel; defaultGroup: string; canWrite: boolean; discard: boolean;
+function ReviewForm({ finding, current, defaultGroup, defaultContext, canWrite, discard, onKeep, onClose, onRequestClose, onDirty, onBusy, onSave }: {
+  finding: Finding; current?: PriorityLabel; defaultGroup: string; defaultContext?: Scan["prediction_context"]; canWrite: boolean; discard: boolean;
   onKeep: () => void; onClose: () => void; onRequestClose: () => void; onDirty: () => void; onBusy: (busy: boolean) => void;
   onSave: (input: LabelInput, next: boolean) => Promise<void>;
 }) {
   const { t, locale } = useLanguage();
-  const [value, setValue] = useState<LabelInput>(() => current ?? { repository_group: defaultGroup, review_status: "needs_context", priority_label: "", repository_criticality: "unknown", exposure: "unknown", impact: "unknown", label_reason: "" });
+  const [value, setValue] = useState<LabelInput>(() => current ?? { repository_group: defaultGroup, review_status: "needs_context", priority_label: "", repository_criticality: defaultContext?.repository_criticality ?? "unknown", exposure: defaultContext?.exposure ?? "unknown", impact: defaultContext?.impact ?? "unknown", label_reason: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const locked = useRef(false);

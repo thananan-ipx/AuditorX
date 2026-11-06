@@ -45,12 +45,22 @@ func main() {
 	}
 	store := scan.NewStore(pool)
 	worker := scan.Worker{Queue: store, Source: scan.JobSource{GitHub: scan.ConnectedGitHubSource{Store: store, Client: github.NewClient(), Key: key}}, Analyzer: scan.Semgrep{Executable: binary}}
+	var predictor scan.Predictor
+	if url := os.Getenv("PREDICTION_SERVICE_URL"); url != "" {
+		predictor = scan.NewPredictionClient(url)
+	}
+	priorityWorker := scan.PredictionWorker{Queue: store, Predictor: predictor}
 	slog.Info("scan worker ready", "rules", "baseline-v1/baseline-v2/baseline-v3/baseline-v4", "default_rules", "baseline-v4", "scope", "GitHub/local upload, Python/JS/TS/Go, detected Next.js packages")
 	for ctx.Err() == nil {
 		worked, err := worker.RunOne(ctx)
 		if err != nil && ctx.Err() == nil {
 			slog.Error("scan worker iteration failed; check database role and migrations")
 		}
+		predicted, predictionErr := priorityWorker.RunOne(ctx)
+		if predictionErr != nil && ctx.Err() == nil {
+			slog.Error("priority prediction iteration failed; check migrations and worker role")
+		}
+		worked = worked || predicted
 		if !worked || err != nil {
 			select {
 			case <-ctx.Done():

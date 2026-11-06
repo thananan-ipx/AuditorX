@@ -1,3 +1,9 @@
+export type LatestScan = {
+  status: "queued" | "running" | "completed" | "failed" | "cancelled";
+  created_at: string;
+  high: number; medium: number; low: number;
+};
+
 export type Repository = {
   id: string;
   owner: string;
@@ -7,6 +13,8 @@ export type Repository = {
   repository_url?: string;
   access_level?: "owner" | "editor" | "viewer";
   created_at?: string;
+  /** Only returned by the list endpoint. */
+  latest_scan?: LatestScan;
 };
 
 export type Capabilities = {

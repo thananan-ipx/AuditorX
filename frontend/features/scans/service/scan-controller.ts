@@ -1,6 +1,7 @@
 import { ApiError } from "@/lib/api-client";
 import { isActive, type Finding, type Scan } from "../types";
 import { scanService } from "./scan-service";
+import type { PredictionContext } from "./prediction-service";
 
 export type ScanState = {
   phase: "loading" | "ready" | "error";
@@ -103,11 +104,11 @@ export class ScanController {
     this.publish({ phase: "error", jobs: [], selected: null, findings: null, action: null, error });
   }
 
-  enqueue = () => this.mutate("start");
+  enqueue = (context?: PredictionContext) => this.mutate("start", undefined, undefined, context);
   upload = (source: FormData) => this.mutate("upload", source);
-  local = (path: string) => this.mutate("local", undefined, path);
+  local = (path: string, context?: PredictionContext) => this.mutate("local", undefined, path, context);
   cancel = () => this.mutate("cancel");
-  private async mutate(action: "start" | "upload" | "local" | "cancel", source?: FormData, path?: string) {
+  private async mutate(action: "start" | "upload" | "local" | "cancel", source?: FormData, path?: string, context?: PredictionContext) {
     if (!this.alive || !this.canWrite || this.state.action || this.state.phase !== "ready") return;
     if ((action !== "cancel") && (this.state.jobs.some(isActive) || (this.state.selected && isActive(this.state.selected)))) return;
     const selected = this.state.selected;
@@ -115,8 +116,8 @@ export class ScanController {
     const { signal, current } = this.begin();
     this.publish({ action, notice: "" });
     try {
-      const job = action === "local" ? await this.api.local(this.repositoryID, path!, signal) : action === "start"
-        ? await this.api.start(this.repositoryID, this.branch, signal)
+      const job = action === "local" ? await this.api.local(this.repositoryID, path!, signal, context) : action === "start"
+        ? await this.api.start(this.repositoryID, this.branch, signal, context)
         : action === "upload"
           ? await this.api.upload(this.repositoryID, source!, signal)
           : await this.api.cancel(this.repositoryID, selected!.id, signal);

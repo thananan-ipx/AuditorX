@@ -38,11 +38,11 @@ func (s *Store) begin(ctx context.Context, actor string, worker bool) (pgx.Tx, e
 	return tx, nil
 }
 
-const jobColumns = `id::text,repository_id::text,requested_by::text,branch,rules_version,status,attempts,commit_sha,scanner_version,error_code,source_kind,source_name,source_digest,created_at,started_at,finished_at,source_languages,checked_rule_ids`
+const jobColumns = `id::text,repository_id::text,requested_by::text,branch,rules_version,status,attempts,commit_sha,scanner_version,error_code,source_kind,source_name,source_digest,created_at,started_at,finished_at,source_languages,checked_rule_ids,prediction_context`
 
 func readJob(row interface{ Scan(...any) error }) (Job, error) {
 	var j Job
-	err := row.Scan(&j.ID, &j.RepositoryID, &j.RequestedBy, &j.Branch, &j.RulesVersion, &j.Status, &j.Attempts, &j.CommitSHA, &j.ScannerVersion, &j.ErrorCode, &j.SourceKind, &j.SourceName, &j.SourceDigest, &j.CreatedAt, &j.StartedAt, &j.FinishedAt, &j.SourceLanguages, &j.CheckedRuleIDs)
+	err := row.Scan(&j.ID, &j.RepositoryID, &j.RequestedBy, &j.Branch, &j.RulesVersion, &j.Status, &j.Attempts, &j.CommitSHA, &j.ScannerVersion, &j.ErrorCode, &j.SourceKind, &j.SourceName, &j.SourceDigest, &j.CreatedAt, &j.StartedAt, &j.FinishedAt, &j.SourceLanguages, &j.CheckedRuleIDs, &j.PredictionContext)
 	return j, translate(err)
 }
 func translate(err error) error {
@@ -56,27 +56,27 @@ func translate(err error) error {
 	return err
 }
 
-func (s *Store) Enqueue(ctx context.Context, actor, repo, branch string) (Job, error) {
+func (s *Store) Enqueue(ctx context.Context, actor, repo, branch string, prediction ...PredictionContext) (Job, error) {
 	tx, err := s.begin(ctx, actor, false)
 	if err != nil {
 		return Job{}, err
 	}
 	defer rollback(tx)
-	job, err := readJob(tx.QueryRow(ctx, `INSERT INTO public.scan_jobs(repository_id,requested_by,branch) VALUES ($1::uuid,$2::uuid,$3) RETURNING `+jobColumns, repo, actor, branch))
+	job, err := readJob(tx.QueryRow(ctx, `INSERT INTO public.scan_jobs(repository_id,requested_by,branch,prediction_context) VALUES ($1::uuid,$2::uuid,$3,$4) RETURNING `+jobColumns, repo, actor, branch, predictionContextJSON(prediction...)))
 	if err != nil {
 		return Job{}, err
 	}
 	return job, tx.Commit(ctx)
 }
 
-func (s *Store) EnqueueUpload(ctx context.Context, actor, repo, branch, name, digest string, archive []byte) (Job, error) {
+func (s *Store) EnqueueUpload(ctx context.Context, actor, repo, branch, name, digest string, archive []byte, prediction ...PredictionContext) (Job, error) {
 	tx, err := s.begin(ctx, actor, false)
 	if err != nil {
 		return Job{}, err
 	}
 	defer rollback(tx)
-	job, err := readJob(tx.QueryRow(ctx, `INSERT INTO public.scan_jobs(repository_id,requested_by,branch,source_kind,source_name,source_digest)
- VALUES ($1::uuid,$2::uuid,$3,'upload',$4,$5) RETURNING `+jobColumns, repo, actor, branch, name, digest))
+	job, err := readJob(tx.QueryRow(ctx, `INSERT INTO public.scan_jobs(repository_id,requested_by,branch,source_kind,source_name,source_digest,prediction_context)
+ VALUES ($1::uuid,$2::uuid,$3,'upload',$4,$5,$6) RETURNING `+jobColumns, repo, actor, branch, name, digest, predictionContextJSON(prediction...)))
 	if err != nil {
 		return Job{}, err
 	}
@@ -86,13 +86,13 @@ func (s *Store) EnqueueUpload(ctx context.Context, actor, repo, branch, name, di
 	return job, tx.Commit(ctx)
 }
 
-func (s *Store) EnqueueLocal(ctx context.Context, actor, repo, branch, name string) (Job, error) {
+func (s *Store) EnqueueLocal(ctx context.Context, actor, repo, branch, name string, prediction ...PredictionContext) (Job, error) {
 	tx, err := s.begin(ctx, actor, false)
 	if err != nil {
 		return Job{}, err
 	}
 	defer rollback(tx)
-	j, err := readJob(tx.QueryRow(ctx, `INSERT INTO public.scan_jobs(repository_id,requested_by,branch,source_kind,source_name) VALUES ($1::uuid,$2::uuid,$3,'local',$4) RETURNING `+jobColumns, repo, actor, branch, name))
+	j, err := readJob(tx.QueryRow(ctx, `INSERT INTO public.scan_jobs(repository_id,requested_by,branch,source_kind,source_name,prediction_context) VALUES ($1::uuid,$2::uuid,$3,'local',$4,$5) RETURNING `+jobColumns, repo, actor, branch, name, predictionContextJSON(prediction...)))
 	if err != nil {
 		return Job{}, err
 	}

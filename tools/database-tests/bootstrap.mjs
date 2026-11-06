@@ -52,6 +52,10 @@ export async function database() {
     await db.exec(syntheticDataset.split('-- +goose Up')[1].split('-- +goose Down')[0]);
     const simulatedLabels = await readFile(new URL('../../backend/migrations/00014_simulated_priority_labels.sql', import.meta.url), 'utf8');
     await db.exec(simulatedLabels.split('-- +goose Up')[1].split('-- +goose Down')[0]);
+    const autoPredictions = await readFile(new URL('../../backend/migrations/00015_automatic_priority_predictions.sql', import.meta.url), 'utf8');
+    await db.exec(autoPredictions.split('-- +goose Up')[1].split('-- +goose Down')[0]);
+    const privatePredictionLeases = await readFile(new URL('../../backend/migrations/00016_private_prediction_leases.sql', import.meta.url), 'utf8');
+    await db.exec(privatePredictionLeases.split('-- +goose Up')[1].split('-- +goose Down')[0]);
     return db;
   } catch (err) {
     await db.close();

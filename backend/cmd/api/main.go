@@ -119,7 +119,11 @@ func newHandler(cfg config.Config, appLogger *slog.Logger, databasePool *databas
 		search.Handler{Repositories: projectrepo.NewPostgres(databasePool)}.RegisterRoutes(mux)
 		var scanHandler interface{ RegisterRoutes(*http.ServeMux) }
 		if cfg.ScanQueueEnabled {
-			scanHandler = scan.Handler{Repositories: projectservice.New(projectrepo.NewPostgres(databasePool)), Jobs: scan.NewStore(databasePool)}
+			var predictor scan.Predictor
+			if cfg.PredictionServiceURL != "" {
+				predictor = scan.NewPredictionClient(cfg.PredictionServiceURL)
+			}
+			scanHandler = scan.Handler{Repositories: projectservice.New(projectrepo.NewPostgres(databasePool)), Jobs: scan.NewStore(databasePool), Predictor: predictor}
 		}
 		project.NewModule(databasePool).RegisterRoutesWithScans(mux, scanHandler)
 	} else {

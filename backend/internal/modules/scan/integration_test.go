@@ -89,7 +89,7 @@ func TestPostgresIntegration(t *testing.T) {
 		return rec
 	}
 	base := "/api/v1/repositories/" + repo.ID + "/scans"
-	created := api(alice, "POST", base, `{"branch":"main","rule_profile":"recommended"}`)
+	created := api(alice, "POST", base, `{"branch":"main","rule_profile":"recommended","prediction_context":{"repository_criticality":"low","exposure":"test_only","impact":"unknown"}}`)
 	if created.Code != 202 {
 		t.Fatalf("enqueue: %d %s", created.Code, created.Body)
 	}
@@ -100,6 +100,9 @@ func TestPostgresIntegration(t *testing.T) {
 		t.Fatal(err)
 	}
 	first := payload.Data
+	if first.PredictionContext.Exposure != "test_only" || first.PredictionContext.RepositoryCriticality != "low" {
+		t.Fatal("HTTP scan context was not persisted")
+	}
 	if first.Status != "queued" || first.Attempts != 0 || created.Header().Get("Location") != base+"/"+first.ID {
 		t.Fatalf("unexpected enqueue: %+v", first)
 	}
@@ -189,6 +192,58 @@ func TestPostgresIntegration(t *testing.T) {
 		t.Fatalf("findings: %+v", results)
 	}
 	t.Logf("Persisted and retrieved %d finding(s) through HTTP for scan %s", len(results.Data), accepted.ID)
+	// Completion queued durable inference in the same transaction; it runs without a browser.
+	priorityWorker := PredictionWorker{Queue: store, Predictor: &predictionStub{}}
+	if worked, e := priorityWorker.RunOne(ctx); e != nil || !worked {
+		t.Fatalf("priority worker: %v %v", worked, e)
+	}
+	prediction, e := store.LatestPrediction(ctx, alice, repo.ID, accepted.ID)
+	if e != nil || prediction.Status != "completed" || prediction.Result == nil || len(prediction.Result.Predictions) != 1 {
+		t.Fatalf("saved prediction: %+v %v", prediction, e)
+	}
+	if _, e = store.LatestPrediction(ctx, bob, repo.ID, accepted.ID); !errors.Is(e, ErrNotFound) {
+		t.Fatalf("prediction isolation: %v", e)
+	}
+	newRun, e := store.RetryPrediction(ctx, alice, repo.ID, accepted.ID)
+	if e != nil || newRun.ID == prediction.ID {
+		t.Fatalf("retry history: %+v %v", newRun, e)
+	}
+	duplicate, e := store.RetryPrediction(ctx, alice, repo.ID, accepted.ID)
+	if e != nil || duplicate.ID != newRun.ID {
+		t.Fatalf("retry deduplication: %+v %v", duplicate, e)
+	}
+	claimedPrediction, _, e := store.ClaimPrediction(ctx)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if e = store.FinishPrediction(ctx, claimedPrediction, nil); e != nil {
+		t.Fatal(e)
+	}
+	if e = store.FinishPrediction(ctx, claimedPrediction, nil); !errors.Is(e, ErrLeaseLost) {
+		t.Fatalf("stale prediction publication: %v", e)
+	}
+	retrying, e := store.LatestPrediction(ctx, alice, repo.ID, accepted.ID)
+	if e != nil || retrying.Status != "queued" || retrying.Attempts != 1 {
+		t.Fatalf("retry schedule: %+v %v", retrying, e)
+	}
+	if _, e = pool.Exec(ctx, `UPDATE public.priority_prediction_runs SET attempts=2,retry_at=now()-interval '1 second' WHERE id=$1`, newRun.ID); e != nil {
+		t.Fatal(e)
+	}
+	claimedPrediction, _, e = store.ClaimPrediction(ctx)
+	if e != nil {
+		t.Fatal(e)
+	}
+	if e = store.FinishPrediction(ctx, claimedPrediction, nil); e != nil {
+		t.Fatal(e)
+	}
+	exhaustedPrediction, e := store.LatestPrediction(ctx, alice, repo.ID, accepted.ID)
+	if e != nil || exhaustedPrediction.Status != "failed" || exhaustedPrediction.Attempts != 3 {
+		t.Fatalf("bounded retries: %+v %v", exhaustedPrediction, e)
+	}
+	stillScanned, e := store.Get(ctx, alice, repo.ID, accepted.ID)
+	if e != nil || stillScanned.Status != "completed" {
+		t.Fatal("prediction failure changed scan status")
+	}
 	if rec := api(bob, "GET", base+"/"+accepted.ID+"/findings", ""); rec.Code != 404 {
 		t.Fatal("cross-user findings visible")
 	}

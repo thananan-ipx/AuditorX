@@ -119,16 +119,32 @@ func (p *Postgres) List(ctx context.Context, actor string, limit, offset int) ([
 		return nil, err
 	}
 	defer rollback(tx)
-	rows, err := tx.Query(ctx, selectRepository+` ORDER BY r.created_at DESC, r.id DESC LIMIT $2 OFFSET $3`, actor, limit, offset)
+	rows, err := tx.Query(ctx, `SELECT r.id::text, r.name, r.owner_name, r.repository_url, r.default_branch,
+		r.status, r.created_by::text, m.access_level, r.created_at,
+		s.status, s.created_at, COALESCE(f.high, 0), COALESCE(f.medium, 0), COALESCE(f.low, 0)
+		FROM public.repositories r JOIN public.repository_members m ON m.repository_id = r.id
+		LEFT JOIN LATERAL (SELECT j.id, j.status, j.created_at FROM public.scan_jobs j
+			WHERE j.repository_id = r.id ORDER BY j.created_at DESC, j.id DESC LIMIT 1) s ON true
+		LEFT JOIN LATERAL (SELECT count(*) FILTER (WHERE severity = 'High')::int AS high,
+			count(*) FILTER (WHERE severity = 'Medium')::int AS medium,
+			count(*) FILTER (WHERE severity = 'Low')::int AS low
+			FROM public.scan_findings sf WHERE sf.scan_id = s.id AND sf.repository_id = r.id) f ON true
+		WHERE m.user_id = $1::uuid ORDER BY r.created_at DESC, r.id DESC LIMIT $2 OFFSET $3`, actor, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	items := make([]entity.Repository, 0)
 	for rows.Next() {
-		item, err := scan(rows)
-		if err != nil {
-			return nil, err
+		var item entity.Repository
+		var status *string
+		var created *time.Time
+		var high, medium, low int
+		if err := rows.Scan(&item.ID, &item.Name, &item.Owner, &item.URL, &item.Branch, &item.Status, &item.CreatedBy, &item.AccessLevel, &item.CreatedAt, &status, &created, &high, &medium, &low); err != nil {
+			return nil, mapError(err)
+		}
+		if status != nil && created != nil {
+			item.LatestScan = &entity.ScanSummary{Status: *status, CreatedAt: *created, High: high, Medium: medium, Low: low}
 		}
 		items = append(items, item)
 	}
@@ -140,6 +156,23 @@ func (p *Postgres) List(ctx context.Context, actor string, limit, offset int) ([
 		return nil, err
 	}
 	return items, nil
+}
+
+// Count returns how many repositories the actor can access.
+func (p *Postgres) Count(ctx context.Context, actor string) (int, error) {
+	tx, err := p.begin(ctx, actor)
+	if err != nil {
+		return 0, err
+	}
+	defer rollback(tx)
+	var total int
+	if err = tx.QueryRow(ctx, `SELECT count(*)::int FROM public.repository_members WHERE user_id = $1::uuid`, actor).Scan(&total); err != nil {
+		return 0, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return 0, err
+	}
+	return total, nil
 }
 
 func mapError(err error) error {

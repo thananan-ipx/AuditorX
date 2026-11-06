@@ -30,7 +30,7 @@ type jobsStub struct {
 	status string
 }
 
-func (s *jobsStub) EnqueueLocal(context.Context, string, string, string, string) (Job, error) {
+func (s *jobsStub) EnqueueLocal(context.Context, string, string, string, string, ...PredictionContext) (Job, error) {
 	s.calls++
 	return Job{ID: bob, Status: "queued", SourceKind: "local"}, s.err
 }
@@ -66,11 +66,11 @@ func TestEnqueueLocalHTTP(t *testing.T) {
 	}
 }
 
-func (s *jobsStub) Enqueue(context.Context, string, string, string) (Job, error) {
+func (s *jobsStub) Enqueue(context.Context, string, string, string, ...PredictionContext) (Job, error) {
 	s.calls++
 	return Job{ID: bob, Status: "queued"}, s.err
 }
-func (s *jobsStub) EnqueueUpload(context.Context, string, string, string, string, string, []byte) (Job, error) {
+func (s *jobsStub) EnqueueUpload(context.Context, string, string, string, string, string, []byte, ...PredictionContext) (Job, error) {
 	s.calls++
 	return Job{ID: bob, Status: "queued", SourceKind: "upload"}, s.err
 }

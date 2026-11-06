@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import { Typography } from "@/components/ui/typography";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { PagePagination } from "@/components/shared/page-pagination";
@@ -7,7 +6,9 @@ import { Feedback, EmptyState, LoadingState } from "@/components/shared/feedback
 import { FormField } from "@/components/shared/form-field";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { PageHeader, SectionCard, Disclosure, FilterBar, StatCard } from "@/components/shared/workspace-ui";
+import { PageHeader, SectionCard, Disclosure, FilterBar, StatCard, Crumbs } from "@/components/shared/workspace-ui";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import { SelectField } from "@/components/shared/select-field";
 
 import { useEffect, useRef, useState, useSyncExternalStore, type ChangeEvent, type InputHTMLAttributes } from "react";
@@ -22,6 +23,8 @@ import type { Repository } from "@/features/repositories/types";
 import { coverageRules, LANGUAGE_LABELS } from "../rule-catalog";
 import { ScanController, type ScanState } from "../service/scan-controller";
 import { DatasetLabeling } from "./dataset-labeling";
+import { PriorityPredictions } from "./priority-predictions";
+import type { PredictionContext } from "../service/prediction-service";
 import { isActive, type Finding, type Scan, type ScanStatus } from "../types";
 
 const statusLabels: Record<ScanStatus, string> = {
@@ -54,54 +57,70 @@ export function RepositoryScans({ repository }: { repository: Repository }) {
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
   useEffect(() => { controller.start(); return controller.stop; }, [controller]);
   return <ScanWorkspace repository={repository} state={state} canWrite={canWrite}
-    onStart={() => { void controller.enqueue(); }} onCancel={() => { void controller.cancel(); }}
-    onLocal={(path) => { void controller.local(path); }}
+    onStart={(context) => { void controller.enqueue(context); }} onCancel={() => { void controller.cancel(); }}
+    onLocal={(path, context) => { void controller.local(path, context); }}
     onUpload={(source) => { void controller.upload(source); }}
     onSelect={controller.select} onRefresh={controller.retry} />;
 }
 
 export function ScanWorkspace({ repository, state, canWrite, onStart, onUpload, onLocal, onCancel, onSelect, onRefresh }: {
-  repository: Repository; state: ScanState; canWrite: boolean; onLocal?: (path: string) => void;
-  onStart: () => void; onUpload: (source: FormData) => void; onCancel: () => void; onSelect: (id: string) => void; onRefresh: () => void;
+  repository: Repository; state: ScanState; canWrite: boolean; onLocal?: (path: string, context?: PredictionContext) => void;
+  onStart: (context?: PredictionContext) => void; onUpload: (source: FormData) => void; onCancel: () => void; onSelect: (id: string) => void; onRefresh: () => void;
 }) {
   const { locale, t } = useLanguage();
   const active = state.jobs.find(isActive);
+  const [predictionContext, setPredictionContext] = useState<PredictionContext>({repository_criticality:"unknown",exposure:"unknown",impact:"unknown"});
   const [source, setSource] = useState(onLocal ? "local" : "upload");
   const [showScan, setShowScan] = useState<boolean | null>(null);
-  const setupOpen = showScan ?? (state.phase === "ready" && !state.jobs.length);
+  const hasScans = state.jobs.length > 0 || !!state.selected;
+  // First scan: setup is shown inline. Later scans open it in a dialog so results stay in view.
+  const setupOpen = !active && (showScan ?? (state.phase === "ready" && !state.jobs.length));
+  const busy = state.phase !== "ready" || !!state.action || !!active;
+  const setup = <>
+    <Disclosure title={t("Context for this scan")} description={t("Optional. Unknown values stay unknown; context is saved separately for each scan.")}>
+      <div className="grid gap-4 sm:grid-cols-3">{([
+        ["repository_criticality","Repository criticality",["unknown","high","normal","low"]],
+        ["exposure","Exposure",["unknown","public","authenticated","internal","test_only"]],
+        ["impact","Impact",["unknown","high","medium","low"]],
+      ] as const).map(([key,label,values]) => <SelectField key={key} label={t(label)} value={predictionContext[key]} disabled={!!state.action || !!active} onValueChange={value => setPredictionContext(previous => ({...previous,[key]:value}))} options={values.map(value => ({value,label:t(value)}))} />)}</div>
+    </Disclosure>
+    <Tabs value={source} onValueChange={setSource}>
+      <TabsList aria-label={t("Scan source")} className="h-auto w-full flex-wrap justify-start gap-1 sm:w-fit">
+        {onLocal && <TabsTrigger value="local"><FolderOpen size={15} />{t("Local path")}</TabsTrigger>}
+        <TabsTrigger value="upload"><Upload size={15} />{t("Folder or ZIP")}</TabsTrigger>
+        <TabsTrigger value="github"><GitBranch size={15} />GitHub</TabsTrigger>
+      </TabsList>
+      {onLocal && <TabsContent value="local"><LocalPathControls disabled={busy} onScan={path => { setShowScan(false); onLocal(path, predictionContext); }} /></TabsContent>}
+      <TabsContent value="upload"><LocalUploadControls disabled={busy} uploading={state.action === "upload"} onUpload={data => { data.set("prediction_context", JSON.stringify(predictionContext)); setShowScan(false); onUpload(data); }} /></TabsContent>
+      <TabsContent value="github"><div className="space-y-4 rounded-lg bg-muted/40 p-4"><p className="type-body-sm">{repository.owner}/{repository.name} · {repository.branch}</p><p className="type-caption text-muted-foreground">{t("Scan the selected repository using its connected GitHub access.")}</p><Button disabled={busy} onClick={() => { setShowScan(false); onStart(predictionContext); }}><Play size={15} />{t(state.action === "start" ? "Submitting…" : "Start scan")}</Button></div></TabsContent>
+    </Tabs>
+    <p className="type-caption text-muted-foreground">{t("Selects checks for the Python, JavaScript, TypeScript and Go files found in each scan. Uploaded code is deleted after processing. This is not a comprehensive security audit.")}</p>
+  </>;
   return <div className="space-y-5">
-    <PageHeader title={t("Repository scans")} icon={GitBranch}
+    <PageHeader title={repository.name} icon={GitBranch}
       description={t("Scan a project, review its findings, then prepare training labels.")}
-      eyebrow={<span className="flex flex-wrap items-center gap-2"><span className="break-all">{repository.owner} / {repository.name}</span><Badge variant="outline">{repository.branch}</Badge><span>{canWrite ? t("Write access") : t("Read-only access")}</span><Link href="/repositories" className="underline underline-offset-4 hover:text-foreground">{t("Choose repository")}</Link></span>}
+      eyebrow={<Crumbs items={[{ label: t("Repositories"), href: "/repositories" }, { label: `${repository.owner} / ${repository.name}` }]} />}
       actions={<>
+        <span className="flex flex-wrap items-center gap-2 type-caption text-muted-foreground"><Badge variant="outline">{repository.branch}</Badge>{canWrite ? t("Write access") : t("Read-only access")}</span>
         <Button variant="outline" disabled={state.phase === "loading" || !!state.action} onClick={onRefresh}><RefreshCw size={14} aria-hidden="true" />{t("Refresh")}</Button>
-        {canWrite && <Button disabled={state.phase !== "ready" || !!state.action || !!active} onClick={() => setShowScan(!setupOpen)} aria-expanded={setupOpen} aria-controls="scan-source"><Play size={15} aria-hidden="true" />{t(setupOpen ? "Hide scan setup" : "New scan")}</Button>}
+        {canWrite && <Button disabled={state.phase !== "ready" || !!state.action || !!active} onClick={() => setShowScan(!setupOpen)} aria-expanded={setupOpen} aria-haspopup={hasScans ? "dialog" : undefined} aria-controls="scan-source"><Play size={15} aria-hidden="true" />{t(setupOpen && !hasScans ? "Hide scan setup" : "New scan")}</Button>}
       </>} />
-    {canWrite && setupOpen && <SectionCard id="scan-source" title={t("1. Choose a source")} description={t("Choose one way to provide the project you want to scan.")}>
-      <Tabs value={source} onValueChange={setSource}>
-        <TabsList aria-label={t("Scan source")} className="h-auto w-full flex-wrap justify-start gap-1 sm:w-fit">
-          {onLocal && <TabsTrigger value="local"><FolderOpen size={15} />{t("Local path")}</TabsTrigger>}
-          <TabsTrigger value="upload"><Upload size={15} />{t("Folder or ZIP")}</TabsTrigger>
-          <TabsTrigger value="github"><GitBranch size={15} />GitHub</TabsTrigger>
-        </TabsList>
-        {onLocal && <TabsContent value="local"><LocalPathControls disabled={state.phase !== "ready" || !!state.action || !!active} onScan={onLocal} /></TabsContent>}
-        <TabsContent value="upload"><LocalUploadControls disabled={state.phase !== "ready" || !!state.action || !!active} uploading={state.action === "upload"} onUpload={onUpload} /></TabsContent>
-        <TabsContent value="github"><div className="space-y-4 rounded-lg bg-muted/40 p-4"><p className="type-body-sm">{repository.owner}/{repository.name} · {repository.branch}</p><p className="type-caption text-muted-foreground">{t("Scan the selected repository using its connected GitHub access.")}</p><Button disabled={state.phase !== "ready" || !!state.action || !!active} onClick={onStart}><Play size={15} />{t(state.action === "start" ? "Submitting…" : "Start scan")}</Button></div></TabsContent>
-      </Tabs>
-      <p className="type-caption text-muted-foreground">{t("Selects checks for the Python, JavaScript, TypeScript and Go files found in each scan. Uploaded code is deleted after processing. This is not a comprehensive security audit.")}</p>
-    </SectionCard>}
+    {canWrite && setupOpen && !hasScans && <SectionCard id="scan-source" title={t("1. Choose a source")} description={t("Choose one way to provide the project you want to scan.")}>{setup}</SectionCard>}
+    {canWrite && hasScans && <Dialog open={setupOpen} onOpenChange={setShowScan}>
+      <DialogContent id="scan-source" className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader><DialogTitle>{t("1. Choose a source")}</DialogTitle><DialogDescription>{t("Choose one way to provide the project you want to scan.")}</DialogDescription></DialogHeader>
+        <div className="min-w-0 space-y-4">{setup}</div>
+      </DialogContent>
+    </Dialog>}
     {!canWrite && <p className="text-muted-foreground type-body-sm">{t("Only repository owners and editors can start or cancel scans.")}</p>}
     {state.notice && <Feedback>{state.notice}</Feedback>}
     {state.phase === "error" ? <WorkspaceError error={state.error} retry={onRefresh} returnTo={dashboardHref(repository.id)} />
       : <>
         {state.phase === "loading" && <LoadingState>{t("Loading scan history and results…")}</LoadingState>}
         {state.phase === "ready" && state.jobs.length === 0 && !state.selected && <EmptyState icon={Clock3} title={t("No scans yet")}>{canWrite ? t("Start a scan to queue this branch for analysis.") : t("An owner or editor can start the first scan.")} {t("Results appear only after a scan completes.")}</EmptyState>}
-        {active && <Feedback>{locale === "th" ? `มีการสแกนที่กำลังทำงานในสถานะ ${t(statusLabels[active.status])} ระบบจะรีเฟรชสถานะทุก 3 วินาทีขณะทำงาน และงานที่อยู่ในคิวไม่ได้ยืนยันว่าระบบประมวลผลออนไลน์` : `An active scan is ${statusLabels[active.status].toLowerCase()}. Status refreshes every 3 seconds while work is active. A queued job does not confirm that a worker is online.`}</Feedback>}
-        {(state.jobs.length > 0 || state.selected) && <div className="space-y-5">
-          <SectionCard title={t("Scan history")} description={t("Latest 20 scans · newest first")}>
-            <SelectField id="scan-history" label={t("Selected scan")} value={state.selected?.id ?? ""} disabled={!!state.action} onValueChange={onSelect}
-              options={state.jobs.map(scan => ({value:scan.id, label:`${scan.source_name ?? scan.branch} · ${timestamp(scan.created_at, locale, t)} · ${scan.id.slice(0,8)} · ${t(statusLabels[scan.status])}`}))} />
-          </SectionCard>
+        {active && <Feedback>{t("An active scan is {status}. Status refreshes every 3 seconds while work is active. A queued job does not confirm that a worker is online.").replace("{status}", locale === "th" ? t(statusLabels[active.status]) : statusLabels[active.status].toLowerCase())}</Feedback>}
+        {hasScans && <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(240px,300px)_minmax(0,1fr)] lg:items-start">
+          <ScanHistory jobs={state.jobs} selectedID={state.selected?.id} disabled={!!state.action} onSelect={onSelect} />
           {state.selected ? <div className="min-w-0 space-y-5">
             <ScanDetails scan={state.selected} canCancel={canWrite && isActive(state.selected)} cancelling={state.action === "cancel"} busy={!!state.action} onCancel={onCancel} />
             {state.selected.status === "completed" && state.findings !== null && <ScanResults key={state.selected.id} findings={state.findings} scan={state.selected} canWrite={canWrite} />}
@@ -109,6 +128,23 @@ export function ScanWorkspace({ repository, state, canWrite, onStart, onUpload, 
         </div>}
       </>}
   </div>;
+}
+
+function ScanHistory({ jobs, selectedID, disabled, onSelect }: { jobs: Scan[]; selectedID?: string; disabled: boolean; onSelect: (id: string) => void }) {
+  const { locale, t } = useLanguage();
+  const format = new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en", { dateStyle: "medium", timeStyle: "short" });
+  return <SectionCard title={t("Scan history")} description={t("Latest 20 scans · newest first")} className="lg:sticky lg:top-20">
+    <ul id="scan-history" aria-label={t("Scan history")} className="-mx-2 max-h-[28rem] space-y-1 overflow-y-auto px-2">
+      {jobs.map((job) => {
+        const selected = job.id === selectedID;
+        return <li key={job.id}><Button type="button" variant="ghost" disabled={disabled} aria-current={selected ? "true" : undefined} onClick={() => onSelect(job.id)}
+          className={cn("h-auto w-full min-w-0 flex-col items-stretch justify-start gap-0 whitespace-normal rounded-lg border px-3 py-2.5 text-left font-normal", selected ? "border-primary bg-primary/5" : "border-transparent")}>
+          <span className="flex items-center justify-between gap-2"><span className="truncate type-label font-semibold">{job.source_name ?? job.branch}</span><StatusBadge status={job.status}>{t(statusLabels[job.status])}</StatusBadge></span>
+          <span className="mt-1 block truncate type-caption text-muted-foreground">{format.format(new Date(job.created_at))} · <span className="type-code">{job.id.slice(0, 8)}</span></span>
+        </Button></li>;
+      })}
+    </ul>
+  </SectionCard>;
 }
 
 function LocalPathControls({ disabled, onScan }: { disabled: boolean; onScan: (path: string) => void }) {
@@ -193,7 +229,7 @@ function ScanDetails({ scan, canCancel, cancelling, busy, onCancel }: { scan: Sc
   return <Card><CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0 space-y-1"><CardTitle className="break-all">{scan.source_name ?? scan.branch}</CardTitle><CardDescription className="flex flex-wrap items-center gap-2"><span className="type-code">{scan.id.slice(0,8)}</span><span>· {timestamp(scan.created_at, locale, t)}</span></CardDescription></div><StatusBadge status={scan.status}>{t(statusLabels[scan.status])}</StatusBadge></CardHeader>
     <CardContent className="space-y-5">
       <p role="status" className="type-body-sm">{scan.status === "queued" ? t("Waiting for a worker. There is no completion estimate yet.")
-        : scan.status === "running" ? locale === "th" ? `กำลังดึงซอร์สโค้ดหรือวิเคราะห์ (ครั้งที่ ${scan.attempts}) ผลตรวจทั้งหมดจะเผยแพร่พร้อมกันเมื่อการสแกนเสร็จสิ้น` : `Source retrieval or analysis is in progress (attempt ${scan.attempts}). Findings are published together when the scan completes.`
+        : scan.status === "running" ? t("Source retrieval or analysis is in progress (attempt {attempt}). Findings are published together when the scan completes.").replace("{attempt}", String(scan.attempts))
         : scan.status === "failed" ? failureMessage(scan.error_code, t)
         : scan.status === "cancelled" ? t("This scan was cancelled and cannot publish findings. An already-running analyzer may continue until it stops or times out.")
         : t("Analysis completed. The findings below belong to this scan and its recorded commit.")}</p>
@@ -257,10 +293,13 @@ export function RuleCoverage({ scan, findings, embedded = false }: { scan: Scan;
 
 function ScanResults({ findings, scan, canWrite }: { findings: Finding[]; scan: Scan; canWrite: boolean }) {
   const { t } = useLanguage();
-  return <Tabs defaultValue="findings">
-    <TabsList aria-label={t("Scan results")}><TabsTrigger value="findings">{t("Findings")}</TabsTrigger><TabsTrigger value="labels">{t("Training labels")}</TabsTrigger></TabsList>
+  const [tab, setTab] = useState("priority");
+  const [reviewFingerprint, setReviewFingerprint] = useState<string>();
+  return <Tabs value={tab} onValueChange={value => {setReviewFingerprint(undefined);setTab(value);}}>
+    <TabsList aria-label={t("Scan results")} className="h-auto max-w-full flex-wrap justify-start"><TabsTrigger value="priority">{t("Fix order")}</TabsTrigger><TabsTrigger value="findings">{t("Findings")}</TabsTrigger><TabsTrigger value="labels">{t("Training labels")}</TabsTrigger></TabsList>
+    <TabsContent value="priority"><PriorityPredictions scan={scan} findings={findings} canWrite={canWrite} onReview={fingerprint => {setReviewFingerprint(fingerprint);setTab("labels");}} /></TabsContent>
     <TabsContent value="findings"><Findings findings={findings} scan={scan} /></TabsContent>
-    <TabsContent value="labels"><DatasetLabeling scan={scan} findings={findings} canWrite={canWrite} /></TabsContent>
+    <TabsContent value="labels"><div className="space-y-4"><Button variant="outline" onClick={() => setTab("priority")}>{t("Back to fix order")}</Button><DatasetLabeling scan={scan} findings={findings} canWrite={canWrite} initialFingerprint={reviewFingerprint} /></div></TabsContent>
   </Tabs>;
 }
 

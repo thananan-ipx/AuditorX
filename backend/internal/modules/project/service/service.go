@@ -52,6 +52,22 @@ func (s *Service) List(ctx context.Context, page, pageSize int) ([]entity.Reposi
 	return s.store.List(ctx, userID, pageSize, (page-1)*pageSize)
 }
 
+// Total reports the accessible repository count when the store supports it.
+func (s *Service) Total(ctx context.Context) (int, bool, error) {
+	counter, ok := s.store.(interface {
+		Count(context.Context, string) (int, error)
+	})
+	if !ok {
+		return 0, false, nil
+	}
+	userID, err := actor(ctx)
+	if err != nil {
+		return 0, false, err
+	}
+	total, err := counter.Count(ctx, userID)
+	return total, err == nil, err
+}
+
 func (s *Service) Get(ctx context.Context, id string) (entity.Repository, error) {
 	userID, err := actor(ctx)
 	if err != nil {
