@@ -12,11 +12,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 )
 
-const currentRulesVersion = "baseline-v2"
+const currentRulesVersion = "baseline-v4"
 
 //go:embed rules/baseline-v1.yaml
 var baselineV1Rules []byte
@@ -24,9 +25,36 @@ var baselineV1Rules []byte
 //go:embed rules/baseline-v2.yaml
 var baselineV2Rules []byte
 
+//go:embed rules/nextjs-v1.yaml
+var nextjsV1Rules []byte
+
+//go:embed rules/baseline-v4.yaml
+var baselineV4Rules []byte
+
+var baselineV3Rules = []byte(strings.TrimSpace(strings.ReplaceAll(string(baselineV2Rules), "\r\n", "\n")) + "\n\n" + strings.TrimPrefix(strings.ReplaceAll(string(nextjsV1Rules), "\r\n", "\n"), "rules:\n"))
+
 var rulesets = map[string][]byte{
 	"baseline-v1": baselineV1Rules,
 	"baseline-v2": baselineV2Rules,
+	"baseline-v3": baselineV3Rules,
+	"baseline-v4": baselineV4Rules,
+}
+
+func init() {
+	allowedRules["baseline-v3"] = make(map[string]bool)
+	for id := range allowedRules["baseline-v2"] {
+		allowedRules["baseline-v3"][id] = true
+	}
+	for _, id := range []string{"request-html", "public-secret", "client-server-import", "request-redirect"} {
+		allowedRules["baseline-v3"]["auditorx.nextjs.security."+id] = true
+	}
+	for _, id := range []string{"server-action-access", "shared-cache", "route-handler-access"} {
+		allowedRules["baseline-v3"]["auditorx.nextjs.review."+id] = true
+	}
+	allowedRules["baseline-v4"] = make(map[string]bool)
+	for id := range allowedRules["baseline-v3"] {
+		allowedRules["baseline-v4"][id] = true
+	}
 }
 
 var allowedRules = map[string]map[string]bool{
@@ -70,9 +98,20 @@ func (b *boundedOutput) Write(p []byte) (int, error) {
 }
 
 func (s Semgrep) Analyze(ctx context.Context, source, rulesVersion string) (Result, error) {
-	rules, ok := rulesets[rulesVersion]
-	if !ok {
-		return Result{}, errors.New("unsupported rules version")
+	languages, err := sourceLanguages(ctx, source)
+	if err != nil {
+		return Result{}, err
+	}
+	var nextTargets []string
+	if rulesVersion == "baseline-v3" || rulesVersion == "baseline-v4" {
+		nextTargets, err = nextjsTargets(ctx, source)
+		if err != nil {
+			return Result{}, err
+		}
+	}
+	rules, checkedRules, err := scopedRules(rulesVersion, languages, nextTargets...)
+	if err != nil {
+		return Result{}, err
 	}
 	executable, err := exec.LookPath(s.Executable)
 	if err != nil {
@@ -100,7 +139,13 @@ func (s Semgrep) Analyze(ctx context.Context, source, rulesVersion string) (Resu
 			cmd.Env = append(cmd.Env, key+"="+value)
 		}
 	}
-	cmd.Env = append(cmd.Env, "PATH="+filepath.Dir(executable))
+	scannerPath := filepath.Dir(executable)
+	if runtime.GOOS != "windows" {
+		// Semgrep's Linux engine invokes uname. Allow only fixed system paths,
+		// never the caller's PATH or the uploaded source directory.
+		scannerPath += string(os.PathListSeparator) + "/usr/bin" + string(os.PathListSeparator) + "/bin"
+	}
+	cmd.Env = append(cmd.Env, "PATH="+scannerPath)
 	cmd.Env = append(cmd.Env, "XDG_CONFIG_HOME="+scratch, "XDG_CACHE_HOME="+scratch)
 	cmd.WaitDelay = 5 * time.Second
 	containProcess(cmd)
@@ -120,7 +165,22 @@ func (s Semgrep) Analyze(ctx context.Context, source, rulesVersion string) (Resu
 			return Result{}, fmt.Errorf("semgrep failed: %w; diagnostics: %s", err, stderr.String())
 		}
 	}
-	return parseFindings(output.Bytes(), rulesVersion)
+	result, err := parseFindings(output.Bytes(), rulesVersion)
+	if err != nil {
+		return Result{}, err
+	}
+	selected := map[string]bool{}
+	for _, id := range checkedRules {
+		selected[id] = true
+	}
+	for _, finding := range result.Findings {
+		if !selected[finding.RuleID] {
+			return Result{}, errors.New("finding outside selected language rules")
+		}
+	}
+	result.SourceLanguages = languages
+	result.CheckedRuleIDs = checkedRules
+	return result, nil
 }
 
 func parseFindings(data []byte, rulesVersion string) (Result, error) {

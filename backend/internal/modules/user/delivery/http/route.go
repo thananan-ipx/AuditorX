@@ -3,6 +3,9 @@ package http
 import "net/http"
 
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
+	if h.ExtraRoutes != nil {
+		h.ExtraRoutes(mux)
+	}
 	private := func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Cache-Control", "no-store")

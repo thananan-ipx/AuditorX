@@ -1,5 +1,10 @@
 # Supervised Issue Prioritization
 
+> **Coursework scope update (2026-11-02):** The initial dataset experiment uses
+> three priority classes (High/Medium/Low), with CSV export and human labeling.
+> Follow [the versioned labeling guide](../../ml/labeling-guide.md) for this reduced
+> scope. The four-class engine/model registry below remains a future design.
+
 > **Project:** AuditorX  
 > **Status:** Draft  
 > **Scope:** Small supervised classifier; no LLM training

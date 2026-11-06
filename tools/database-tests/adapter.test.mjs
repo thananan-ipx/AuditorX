@@ -13,7 +13,7 @@ test('Go adapter persists, scopes users, resets sessions and rolls back atomical
     console.log('Ephemeral PostgreSQL socket ready; running Go integration test.');
     const url = `postgresql://postgres@${server.getServerConn()}/postgres?sslmode=disable`;
     const result = await new Promise((resolve, reject) => {
-      const child = spawn('go', ['test', '-p', '1', '-count=1', '-timeout=60s', '-run', '^TestPostgresIntegration$', '-v', './internal/modules/project/repository', './internal/modules/scan', './internal/modules/user/repository'], {
+      const child = spawn('go', ['test', '-p', '1', '-count=1', '-timeout=60s', '-run', '^TestPostgresIntegration$', '-v', './internal/modules/project/repository', './internal/modules/scan', './internal/modules/user/repository', './internal/modules/githubconnect'], {
         cwd: fileURLToPath(new URL('../../backend/', import.meta.url)),
         env: { ...process.env, AUDITORX_TEST_DATABASE_URL: url },
         windowsHide: true,

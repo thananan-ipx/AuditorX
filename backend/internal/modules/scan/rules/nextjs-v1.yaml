@@ -1,0 +1,141 @@
+rules:
+  - id: auditorx.nextjs.security.request-html
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Request input reaches raw HTML rendering. Sanitize untrusted HTML with a reviewed HTML sanitizer before rendering it.
+    mode: taint
+    pattern-sources:
+      - pattern: $REQUEST.nextUrl.searchParams.get(...)
+      - pattern: $URL.searchParams.get(...)
+      - pattern: searchParams.get(...)
+      - pattern: useSearchParams(...)
+      - pattern: await searchParams
+      - pattern: await params
+      - pattern: $PROPS.searchParams
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.json()
+      - pattern: $REQ.text()
+    pattern-sanitizers:
+      - patterns:
+          - pattern-inside: |
+              import DOMPurify from "dompurify";
+              ...
+          - pattern: DOMPurify.sanitize(...)
+      - patterns:
+          - pattern-inside: |
+              import DOMPurify from "isomorphic-dompurify";
+              ...
+          - pattern: DOMPurify.sanitize(...)
+      - patterns:
+          - pattern-inside: |
+              import sanitizeHtml from "sanitize-html";
+              ...
+          - pattern: sanitizeHtml(...)
+    pattern-sinks:
+      - patterns:
+          - pattern: '<$TAG ... dangerouslySetInnerHTML={{__html: $HTML}} ... />'
+          - focus-metavariable: $HTML
+
+  - id: auditorx.nextjs.security.public-secret
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: A secret-like environment variable uses NEXT_PUBLIC_, which exposes its value to browser code. Keep secrets in server-only variables.
+    patterns:
+      - pattern-either:
+          - pattern: process.env.$KEY
+          - pattern: process.env["$KEY"]
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: ^NEXT_PUBLIC_.*(SECRET|PASSWORD|PRIVATE_KEY|ACCESS_TOKEN|AUTH_TOKEN)(_|$)
+
+  - id: auditorx.nextjs.security.client-server-import
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: A Client Component imports a known server-only module. Move server access behind a Server Component, Route Handler or Server Action.
+    patterns:
+      - pattern-inside: |
+          "use client";
+          ...
+      - pattern-either:
+          - pattern: import $NAME from "$MODULE"
+          - pattern: import { $...NAMES } from "$MODULE"
+          - pattern: import * as $NAME from "$MODULE"
+          - pattern: import "$MODULE"
+          - pattern: require("$MODULE")
+      - metavariable-regex:
+          metavariable: $MODULE
+          regex: ^(server-only|next/headers|node:fs(/promises)?|fs(/promises)?|pg|@prisma/client)$
+
+  - id: auditorx.nextjs.security.request-redirect
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: Request input reaches a redirect destination. Validate the destination against allowed local paths or trusted origins before redirecting.
+    mode: taint
+    pattern-sources:
+      - pattern: $REQUEST.nextUrl.searchParams.get(...)
+      - pattern: $URL.searchParams.get(...)
+      - pattern: searchParams.get(...)
+      - pattern: useSearchParams(...)
+      - pattern: await searchParams
+      - pattern: await params
+      - pattern: $PROPS.searchParams
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.json()
+    pattern-sinks:
+      - pattern: redirect($URL, ...)
+      - pattern: NextResponse.redirect($URL, ...)
+      - pattern: Response.redirect($URL, ...)
+      - patterns:
+          - pattern-inside: |
+              const $ROUTER = useRouter(...);
+              ...
+          - pattern-either:
+              - pattern: $ROUTER.push($URL, ...)
+              - pattern: $ROUTER.replace($URL, ...)
+          - focus-metavariable: $URL
+
+  - id: auditorx.nextjs.review.server-action-access
+    languages: [javascript, typescript]
+    severity: INFO
+    message: Manual review required for this Server Action. Verify authentication, authorization and input validation; this finding does not mean those checks are missing.
+    pattern-either:
+      - patterns:
+          - pattern-inside: |
+              "use server";
+              ...
+          - pattern: export async function $ACTION(...) { ... }
+      - pattern: |
+          async function $ACTION(...) {
+            "use server";
+            ...
+          }
+
+  - id: auditorx.nextjs.review.shared-cache
+    languages: [javascript, typescript]
+    severity: INFO
+    message: Manual review required for shared caching. Verify that cached user-specific data cannot be returned to another user; this finding does not prove a data leak.
+    pattern-either:
+      - pattern: unstable_cache(...)
+      - pattern: |
+          async function $FUNCTION(...) {
+            "use cache";
+            ...
+          }
+
+  - id: auditorx.nextjs.review.route-handler-access
+    languages: [javascript, typescript]
+    severity: INFO
+    message: Manual review required for this API handler. Verify access rules and input validation; public endpoints may intentionally allow anonymous access.
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: export async function $METHOD(...) { ... }
+              - pattern: export function $METHOD(...) { ... }
+              - pattern: export const $METHOD = async (...) => { ... }
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: ^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)$
+      - pattern: export default async function $HANDLER(...) { ... }
+      - pattern: export default function $HANDLER(...) { ... }

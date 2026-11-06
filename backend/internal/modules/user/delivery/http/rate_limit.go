@@ -18,6 +18,12 @@ type authLimiter struct {
 	entries map[string]authWindow
 }
 
+// NewAuthLimiter applies the bounded per-address policy to external login.
+func NewAuthLimiter() func(http.HandlerFunc) http.HandlerFunc {
+	limiter := &authLimiter{entries: make(map[string]authWindow)}
+	return limiter.wrap
+}
+
 func (l *authLimiter) wrap(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		host, _, err := net.SplitHostPort(r.RemoteAddr)

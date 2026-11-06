@@ -5,7 +5,7 @@ type LoginPageProps = {
 };
 
 export async function LoginPage({ searchParams }: LoginPageProps) {
-  const { status, next = "/" } = await searchParams;
+  const { status, error, next = "/" } = await searchParams;
 
-  return <LoginCard next={next} initialStatus={status} />;
+  return <LoginCard next={next} initialStatus={status} githubError={error} />;
 }

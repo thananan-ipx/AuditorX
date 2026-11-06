@@ -1,0 +1,16 @@
+FROM golang:1.26-alpine AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -trimpath -o /out/auditorx-scan-worker ./cmd/scan-worker
+
+FROM python:3.12-slim
+# Keep aligned with tools/scanner-requirements.txt and the scanner's version gate.
+RUN pip install --no-cache-dir semgrep==1.175.0 \
+    && groupadd --gid 10001 auditorx \
+    && useradd --uid 10001 --gid auditorx --create-home auditorx
+COPY --from=build /out/auditorx-scan-worker /auditorx-scan-worker
+USER auditorx
+ENV SEMGREP_EXECUTABLE=/usr/local/bin/semgrep
+ENTRYPOINT ["/auditorx-scan-worker"]

@@ -7,6 +7,7 @@ import { Feedback } from "../components/shared/feedback";
 import { Progress } from "../components/ui/progress";
 import { CardDescription } from "../components/ui/card";
 import { Typography } from "../components/ui/typography";
+import { SelectField } from "../components/shared/select-field";
 
 test("shared fields associate labels, help and validation errors without dropping caller descriptions", () => {
   const html = renderToStaticMarkup(createElement(FormField, {
@@ -22,6 +23,20 @@ test("shared fields associate labels, help and validation errors without droppin
   assert.match(html, /aria-describedby="external-help url-help url-error"/);
   assert.match(html, /id="url-help"/);
   assert.match(html, /role="alert"[^>]*id="url-error"/);
+});
+
+test("shared selectors preserve accessible labeling, help and disabled state", () => {
+  const html = renderToStaticMarkup(createElement(SelectField, {
+    id: "priority-filter", label: "Priority", description: "Filter by priority",
+    value: "High", options: [{ value: "High", label: "High" }], disabled: true,
+    onValueChange() {},
+  }));
+  assert.match(html, /for="priority-filter"/);
+  assert.match(html, /role="combobox"/);
+  assert.match(html, /id="priority-filter"/);
+  assert.match(html, /aria-describedby="priority-filter-help"/);
+  assert.match(html, /id="priority-filter-help"/);
+  assert.match(html, /disabled=""/);
 });
 
 test("shared feedback announces errors assertively and routine updates politely", () => {

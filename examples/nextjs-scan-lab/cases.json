@@ -1,0 +1,140 @@
+{
+  "schema_version": "nextjs-lab-cases-v1",
+  "dataset_kind": "authored_source_lab",
+  "actual_context": "Local test project with fictional data; hypothetical priorities require review.",
+  "split_grouping": "Keep unsafe/fixed and derived variants of a family together. One small authored project is not a real-project benchmark.",
+  "cases": [
+    {
+      "family": "html",
+      "group": "nextjs-lab-html",
+      "expected_rule": "auditorx.nextjs.security.request-html",
+      "unsafe_file": "app/unsafe/html/page.tsx",
+      "fixed_file": "app/fixed/html/page.tsx",
+      "proposed_priority": "High",
+      "label_source": "authored_lab_scenario_not_human_ground_truth",
+      "actual_exposure": "test_only",
+      "notes": "Hypothetical public HTML preview; fixed variant renders escaped text."
+    },
+    {
+      "family": "redirect",
+      "group": "nextjs-lab-redirect",
+      "expected_rule": "auditorx.nextjs.security.request-redirect",
+      "unsafe_file": "app/api/unsafe/redirect/route.ts",
+      "fixed_file": "app/api/fixed/redirect/route.ts",
+      "proposed_priority": "Medium",
+      "label_source": "authored_lab_scenario_not_human_ground_truth",
+      "actual_exposure": "test_only",
+      "notes": "User-controlled destination versus a constant local allowlist."
+    },
+    {
+      "family": "public-secret",
+      "group": "nextjs-lab-public-secret",
+      "expected_rule": "auditorx.nextjs.security.public-secret",
+      "unsafe_file": "app/unsafe/public-secret/page.tsx",
+      "fixed_file": "app/fixed/public-secret/page.tsx",
+      "proposed_priority": "High",
+      "label_source": "authored_lab_scenario_not_human_ground_truth",
+      "actual_exposure": "test_only",
+      "notes": "Secret-like public name; the actual value is fake and has no authority."
+    },
+    {
+      "family": "logging",
+      "group": "nextjs-lab-logging",
+      "expected_rule": "auditorx.javascript.coding-standard.sensitive-logging",
+      "unsafe_file": "app/api/unsafe/logging/route.ts",
+      "fixed_file": "app/api/fixed/logging/route.ts",
+      "proposed_priority": "Medium",
+      "label_source": "authored_lab_scenario_not_human_ground_truth",
+      "actual_exposure": "test_only",
+      "notes": "Hypothetical real credential logging; use fake form values only."
+    },
+    {
+      "family": "credentials",
+      "group": "nextjs-lab-credentials",
+      "expected_rule": "auditorx.javascript.security.hardcoded-secret",
+      "unsafe_file": "lib/unsafe/credentials.ts",
+      "fixed_file": "lib/fixed/credentials.ts",
+      "proposed_priority": "Low",
+      "label_source": "authored_lab_scenario_not_human_ground_truth",
+      "actual_exposure": "test_only",
+      "notes": "Fake hardcoded password fixture, not a leaked real credential."
+    },
+    {
+      "family": "sql",
+      "group": "nextjs-lab-sql",
+      "expected_rule": "auditorx.javascript.security.sql-template-interpolation",
+      "unsafe_file": "app/api/unsafe/sql/route.ts",
+      "fixed_file": "app/api/fixed/sql/route.ts",
+      "proposed_priority": "High",
+      "label_source": "authored_lab_scenario_not_human_ground_truth",
+      "actual_exposure": "test_only",
+      "notes": "Mock SQL sink only: proves scanner coverage, not a working SQL injection."
+    },
+    {
+      "family": "eval",
+      "group": "nextjs-lab-eval",
+      "expected_rule": "auditorx.javascript.security.dynamic-eval",
+      "unsafe_file": "app/api/unsafe/eval/route.ts",
+      "fixed_file": "app/api/fixed/eval/route.ts",
+      "proposed_priority": "High",
+      "label_source": "authored_lab_scenario_not_human_ground_truth",
+      "actual_exposure": "test_only",
+      "notes": "Request text executed as code versus a constrained numeric parser."
+    },
+    {
+      "family": "shell",
+      "group": "nextjs-lab-shell",
+      "expected_rule": "auditorx.javascript.security.shell-command-execution",
+      "unsafe_file": "app/api/unsafe/shell/route.ts",
+      "fixed_file": "app/api/fixed/shell/route.ts",
+      "proposed_priority": "High",
+      "label_source": "authored_lab_scenario_not_human_ground_truth",
+      "actual_exposure": "test_only",
+      "notes": "Shell concatenation versus fixed program with separate input argument."
+    },
+    {
+      "family": "ownership",
+      "group": "nextjs-lab-ownership",
+      "expected_rule": "auditorx.nextjs.review.server-action-access",
+      "unsafe_file": "app/unsafe/ownership/actions.ts",
+      "fixed_file": "app/fixed/ownership/actions.ts",
+      "proposed_priority": "High",
+      "label_source": "authored_lab_scenario_not_human_ground_truth",
+      "actual_exposure": "test_only",
+      "notes": "Toy identity is fixed to Alice; compare missing versus explicit ownership check. Advisory expected on BOTH files."
+    },
+    {
+      "family": "status",
+      "group": "nextjs-lab-status",
+      "expected_rule": "auditorx.nextjs.review.server-action-access",
+      "unsafe_file": "app/unsafe/status/actions.ts",
+      "fixed_file": "app/fixed/status/actions.ts",
+      "proposed_priority": "Low",
+      "label_source": "authored_lab_scenario_not_human_ground_truth",
+      "actual_exposure": "test_only",
+      "notes": "In-memory workflow with and without status/transition validation. Advisory expected on BOTH files."
+    },
+    {
+      "family": "cache",
+      "group": "nextjs-lab-cache",
+      "expected_rule": "auditorx.nextjs.review.shared-cache",
+      "unsafe_file": "lib/unsafe/cache.ts",
+      "fixed_file": "lib/fixed/cache.ts",
+      "proposed_priority": "Medium",
+      "label_source": "authored_lab_scenario_not_human_ground_truth",
+      "actual_exposure": "test_only",
+      "notes": "User ID captured in closure versus supplied as a cache argument. Advisory expected on BOTH files."
+    },
+    {
+      "family": "client-boundary",
+      "group": "nextjs-lab-client-boundary",
+      "expected_rule": "auditorx.nextjs.security.client-server-import",
+      "unsafe_file": "fixtures/unsafe/client-boundary.tsx",
+      "fixed_file": "fixtures/fixed/client-boundary.tsx",
+      "proposed_priority": "Low",
+      "label_source": "authored_lab_scenario_not_human_ground_truth",
+      "actual_exposure": "test_only",
+      "notes": "Scan-only example of client importing fs; outside the app import graph so the app can build."
+    }
+  ]
+}

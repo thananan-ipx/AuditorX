@@ -1,0 +1,315 @@
+rules:
+  - id: auditorx.python.security.dynamic-eval
+    languages: [python]
+    severity: ERROR
+    message: Avoid evaluating dynamic code; use a constrained parser instead.
+    pattern: eval(...)
+
+  - id: auditorx.javascript.security.dynamic-eval
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Avoid evaluating dynamic code; use a constrained parser instead.
+    pattern: eval(...)
+
+  - id: auditorx.go.security.tls-verification-disabled
+    languages: [go]
+    severity: ERROR
+    message: TLS certificate verification is disabled. Keep InsecureSkipVerify false.
+    pattern: 'tls.Config{..., InsecureSkipVerify: true, ...}'
+
+  - id: auditorx.python.security.hardcoded-secret
+    languages: [python]
+    severity: ERROR
+    message: Do not store credentials or secrets in source code; load them from an approved secret store.
+    patterns:
+      - pattern: $KEY = $VALUE
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i)^(api_?key|client_?secret|password|passwd|secret|access_?token|auth_?token|private_?key)$
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: ^["'][^"']{8,}["']$
+
+  - id: auditorx.javascript.security.hardcoded-secret
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Do not store credentials or secrets in source code; load them from an approved secret store.
+    patterns:
+      - pattern-either:
+          - pattern: const $KEY = $VALUE
+          - pattern: let $KEY = $VALUE
+          - pattern: var $KEY = $VALUE
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i)^(api_?key|apiKey|client_?secret|clientSecret|password|passwd|secret|access_?token|accessToken|auth_?token|authToken|private_?key|privateKey)$
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: ^["'`][^"'`]{8,}["'`]$
+
+  - id: auditorx.go.security.hardcoded-secret
+    languages: [go]
+    severity: ERROR
+    message: Do not store credentials or secrets in source code; load them from an approved secret store.
+    patterns:
+      - pattern-either:
+          - pattern: $KEY := $VALUE
+          - pattern: var $KEY = $VALUE
+          - pattern: const $KEY = $VALUE
+          - pattern: $KEY = $VALUE
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i)^(api_?key|apiKey|client_?secret|clientSecret|password|passwd|secret|access_?token|accessToken|auth_?token|authToken|private_?key|privateKey)$
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: ^["`][^"`]{8,}["`]$
+
+  - id: auditorx.python.security.shell-command-execution
+    languages: [python]
+    severity: ERROR
+    message: Avoid shell command execution; use an argument array without a shell and validate every argument.
+    pattern-either:
+      - pattern: subprocess.$FUNC(..., shell=True, ...)
+      - pattern: os.system(...)
+      - pattern: os.popen(...)
+
+  - id: auditorx.javascript.security.shell-command-execution
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Avoid shell command execution; use an argument array with execFile or spawn and validate every argument.
+    pattern-either:
+      - pattern: child_process.exec(...)
+      - pattern: child_process.execSync(...)
+      - pattern: require("child_process").exec(...)
+      - pattern: require("child_process").execSync(...)
+      - pattern: require("node:child_process").exec(...)
+      - pattern: require("node:child_process").execSync(...)
+
+  - id: auditorx.python.security.sql-string-construction
+    languages: [python]
+    severity: ERROR
+    message: Do not construct SQL with interpolation or concatenation; use parameterized queries.
+    pattern-either:
+      - pattern: $DB.execute(f"...")
+      - pattern: $DB.execute(f'...')
+      - pattern: $DB.execute("..." % ...)
+      - pattern: $DB.execute('...' % ...)
+      - pattern: $DB.execute("..." + ...)
+      - pattern: $DB.execute('...' + ...)
+
+  - id: auditorx.javascript.security.sql-template-interpolation
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Do not construct SQL with template interpolation; use a parameterized query API.
+    pattern-either:
+      - pattern: '$DB.query(`...${$VALUE}...`)'
+      - pattern: '$DB.execute(`...${$VALUE}...`)'
+
+  - id: auditorx.python.coding-standard.sensitive-logging
+    languages: [python]
+    severity: WARNING
+    message: Do not write credentials or secrets to logs.
+    patterns:
+      - pattern-either:
+          - pattern: logging.$METHOD(..., $SECRET, ...)
+          - pattern: $LOGGER.$METHOD(..., $SECRET, ...)
+          - pattern: print(..., $SECRET, ...)
+      - metavariable-regex:
+          metavariable: $SECRET
+          regex: (?i)^(api_?key|client_?secret|password|passwd|secret|access_?token|auth_?token|private_?key)$
+
+  - id: auditorx.javascript.coding-standard.sensitive-logging
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: Do not write credentials or secrets to logs.
+    patterns:
+      - pattern-either:
+          - pattern: console.$METHOD(..., $SECRET, ...)
+          - pattern: $LOGGER.$METHOD(..., $SECRET, ...)
+      - metavariable-regex:
+          metavariable: $SECRET
+          regex: (?i)^(api_?key|apiKey|client_?secret|clientSecret|password|passwd|secret|access_?token|accessToken|auth_?token|authToken|private_?key|privateKey)$
+
+  - id: auditorx.go.coding-standard.sensitive-logging
+    languages: [go]
+    severity: WARNING
+    message: Do not write credentials or secrets to logs.
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: $LOGGER.$METHOD(..., $SECRET, ...)
+              - metavariable-regex:
+                  metavariable: $METHOD
+                  regex: ^(Print|Printf|Println|Debug|Debugf|Debugw|DebugContext|Info|Infof|Infow|InfoContext|Warn|Warnf|Warnw|WarnContext|Warning|Warningf|Error|Errorf|Errorw|ErrorContext|Fatal|Fatalf|Fatalln|Panic|Panicf|Panicln|Log|LogAttrs)$
+          - pattern: fmt.Fprint(..., $SECRET, ...)
+          - pattern: fmt.Fprintf(..., $SECRET, ...)
+          - pattern: fmt.Fprintln(..., $SECRET, ...)
+      - metavariable-regex:
+          metavariable: $SECRET
+          regex: (?i)^(api_?key|apiKey|client_?secret|clientSecret|password|passwd|secret|access_?token|accessToken|auth_?token|authToken|private_?key|privateKey)$
+
+  - id: auditorx.go.code-quality.unhandled-json-error
+    languages: [go]
+    severity: WARNING
+    message: Handle the error returned by JSON encoding or decoding.
+    pattern-either:
+      - pattern: _ = json.NewEncoder(...).Encode(...)
+      - pattern: _ = json.NewDecoder(...).Decode(...)
+      - patterns:
+          - pattern-either:
+              - pattern: json.NewEncoder(...).Encode(...)
+              - pattern: json.NewDecoder(...).Decode(...)
+          - pattern-not-inside: $ERR := json.NewEncoder(...).Encode(...)
+          - pattern-not-inside: $ERR = json.NewEncoder(...).Encode(...)
+          - pattern-not-inside: $ERR := json.NewDecoder(...).Decode(...)
+          - pattern-not-inside: $ERR = json.NewDecoder(...).Decode(...)
+          - pattern-not-inside: return json.NewEncoder(...).Encode(...)
+          - pattern-not-inside: return json.NewDecoder(...).Decode(...)
+          - pattern-not-inside: |
+              if $ERR := json.NewEncoder(...).Encode(...); $ERR != nil {
+                ...
+              }
+          - pattern-not-inside: |
+              if $ERR := json.NewDecoder(...).Decode(...); $ERR != nil {
+                ...
+              }
+
+  - id: auditorx.nextjs.security.request-html
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Request input reaches raw HTML rendering. Sanitize untrusted HTML with a reviewed HTML sanitizer before rendering it.
+    mode: taint
+    pattern-sources:
+      - pattern: $REQUEST.nextUrl.searchParams.get(...)
+      - pattern: $URL.searchParams.get(...)
+      - pattern: searchParams.get(...)
+      - pattern: useSearchParams(...)
+      - pattern: await searchParams
+      - pattern: await params
+      - pattern: $PROPS.searchParams
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.json()
+      - pattern: $REQ.text()
+    pattern-sanitizers:
+      - patterns:
+          - pattern-inside: |
+              import DOMPurify from "dompurify";
+              ...
+          - pattern: DOMPurify.sanitize(...)
+      - patterns:
+          - pattern-inside: |
+              import DOMPurify from "isomorphic-dompurify";
+              ...
+          - pattern: DOMPurify.sanitize(...)
+      - patterns:
+          - pattern-inside: |
+              import sanitizeHtml from "sanitize-html";
+              ...
+          - pattern: sanitizeHtml(...)
+    pattern-sinks:
+      - patterns:
+          - pattern: '<$TAG ... dangerouslySetInnerHTML={{__html: $HTML}} ... />'
+          - focus-metavariable: $HTML
+
+  - id: auditorx.nextjs.security.public-secret
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: A secret-like environment variable uses NEXT_PUBLIC_, which exposes its value to browser code. Keep secrets in server-only variables.
+    patterns:
+      - pattern-either:
+          - pattern: process.env.$KEY
+          - pattern: process.env["$KEY"]
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: ^NEXT_PUBLIC_.*(SECRET|PASSWORD|PRIVATE_KEY|ACCESS_TOKEN|AUTH_TOKEN)(_|$)
+
+  - id: auditorx.nextjs.security.client-server-import
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: A Client Component imports a known server-only module. Move server access behind a Server Component, Route Handler or Server Action.
+    patterns:
+      - pattern-inside: |
+          "use client";
+          ...
+      - pattern-either:
+          - pattern: import $NAME from "$MODULE"
+          - pattern: import { $...NAMES } from "$MODULE"
+          - pattern: import * as $NAME from "$MODULE"
+          - pattern: import "$MODULE"
+          - pattern: require("$MODULE")
+      - metavariable-regex:
+          metavariable: $MODULE
+          regex: ^(server-only|next/headers|node:fs(/promises)?|fs(/promises)?|pg|@prisma/client)$
+
+  - id: auditorx.nextjs.security.request-redirect
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: Request input reaches a redirect destination. Validate the destination against allowed local paths or trusted origins before redirecting.
+    mode: taint
+    pattern-sources:
+      - pattern: $REQUEST.nextUrl.searchParams.get(...)
+      - pattern: $URL.searchParams.get(...)
+      - pattern: searchParams.get(...)
+      - pattern: useSearchParams(...)
+      - pattern: await searchParams
+      - pattern: await params
+      - pattern: $PROPS.searchParams
+      - pattern: $REQ.query
+      - pattern: $REQ.body
+      - pattern: $REQ.json()
+    pattern-sinks:
+      - pattern: redirect($URL, ...)
+      - pattern: NextResponse.redirect($URL, ...)
+      - pattern: Response.redirect($URL, ...)
+      - patterns:
+          - pattern-inside: |
+              const $ROUTER = useRouter(...);
+              ...
+          - pattern-either:
+              - pattern: $ROUTER.push($URL, ...)
+              - pattern: $ROUTER.replace($URL, ...)
+          - focus-metavariable: $URL
+
+  - id: auditorx.nextjs.review.server-action-access
+    languages: [javascript, typescript]
+    severity: INFO
+    message: Manual review required for this Server Action. Verify authentication, authorization and input validation; this finding does not mean those checks are missing.
+    pattern-either:
+      - patterns:
+          - pattern-inside: |
+              "use server";
+              ...
+          - pattern: export async function $ACTION(...) { ... }
+      - pattern: |
+          async function $ACTION(...) {
+            "use server";
+            ...
+          }
+
+  - id: auditorx.nextjs.review.shared-cache
+    languages: [javascript, typescript]
+    severity: INFO
+    message: Manual review required for shared caching. Verify that cached user-specific data cannot be returned to another user; this finding does not prove a data leak.
+    pattern-either:
+      - pattern: unstable_cache(...)
+      - pattern: |
+          async function $FUNCTION(...) {
+            "use cache";
+            ...
+          }
+
+  - id: auditorx.nextjs.review.route-handler-access
+    languages: [javascript, typescript]
+    severity: INFO
+    message: Manual review required for this API handler. Verify access rules and input validation; public endpoints may intentionally allow anonymous access.
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: export async function $METHOD(...) { ... }
+              - pattern: export function $METHOD(...) { ... }
+              - pattern: export const $METHOD = async (...) => { ... }
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: ^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)$
+      - pattern: export default async function $HANDLER(...) { ... }
+      - pattern: export default function $HANDLER(...) { ... }

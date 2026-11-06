@@ -11,6 +11,7 @@ import (
 
 	"github.com/IProgressX/auditor-x/backend/internal/config"
 	"github.com/IProgressX/auditor-x/backend/internal/modules/audit"
+	"github.com/IProgressX/auditor-x/backend/internal/modules/dataset"
 	"github.com/IProgressX/auditor-x/backend/internal/modules/project"
 	projectrepo "github.com/IProgressX/auditor-x/backend/internal/modules/project/repository"
 	projectservice "github.com/IProgressX/auditor-x/backend/internal/modules/project/service"
@@ -114,6 +115,7 @@ func newHandler(cfg config.Config, appLogger *slog.Logger, databasePool *databas
 		}})
 	})
 	if cfg.RepositoryStorage == "postgres" {
+		dataset.Handler{Datasets: dataset.Store{DB: databasePool}}.RegisterRoutes(mux)
 		search.Handler{Repositories: projectrepo.NewPostgres(databasePool)}.RegisterRoutes(mux)
 		var scanHandler interface{ RegisterRoutes(*http.ServeMux) }
 		if cfg.ScanQueueEnabled {

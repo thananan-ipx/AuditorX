@@ -4,6 +4,9 @@
 
 ## Local development
 
+GitHub sign-in and selected public/private repository import are available after
+configuring a GitHub App. See [GitHub integration setup](docs/github-integration.md).
+
 ```powershell
 docker compose up -d --build
 docker compose run --rm migrate status
@@ -12,6 +15,9 @@ docker compose run --rm migrate status
 เปิดเว็บที่ `http://localhost:3000` โดย PostgreSQL เก็บข้อมูลใน Docker volume
 และ Goose จะรัน migration ก่อนเริ่ม API อัตโนมัติ บัญชีผู้ใช้และ session เก็บใน PostgreSQL
 โดยไม่ต้องใช้ Supabase ดูรายละเอียดที่ [Local database](docs/local-database.md) และ [Local authentication](docs/local-auth.md)
+
+Docker Compose เริ่ม Semgrep Worker และเปิดคิวสแกนให้ด้วย เมื่อเลือก Repository
+แล้วเข้า Dashboard จะมีปุ่ม **Choose folder / Choose ZIP** สำหรับสแกนโค้ดจากเครื่อง
 
 AuditorX เป็นระบบตรวจสอบและวิเคราะห์คุณภาพซอร์สโค้ดด้วยปัญญาประดิษฐ์ (AI-Powered Source Code Quality Auditor) ที่ถูกออกแบบมาเพื่อช่วยนักพัฒนาและองค์กรในการยกระดับคุณภาพของซอฟต์แวร์ โดยผสานการทำงานระหว่าง **Static Code Analysis** และ **Large Language Models (LLMs)**
 

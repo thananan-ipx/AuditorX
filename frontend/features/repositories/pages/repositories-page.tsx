@@ -3,6 +3,7 @@ import { Typography } from "@/components/ui/typography";
 import { PagePagination } from "@/components/shared/page-pagination";
 import { Feedback, LoadingState } from "@/components/shared/feedback";
 import { FormField } from "@/components/shared/form-field";
+import { PageHeader, Disclosure } from "@/components/shared/workspace-ui";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -16,6 +17,7 @@ import { useLanguage } from "@/lib/i18n";
 import { dashboardHref, PAGE_SIZE, repositoryService } from "../service/repository-service";
 import type { Capabilities, Repository } from "../types";
 import { EmptyRepositories, errorMessage, ModeNotice, WorkspaceError } from "../components/workspace-feedback";
+import { GitHubRepositories } from "@/features/github/components/github-repositories";
 
 type ListState = { kind: "loading" } | { kind: "error"; error: unknown } | {
   kind: "ready"; capabilities: Capabilities; repositories: Repository[];
@@ -44,17 +46,13 @@ export default function RepositoriesPage() {
     setPage(next);
   }
 
-  return <div className="min-w-0">
-    <div className="mb-7">
-      <p className="mb-2 text-muted-foreground type-body-sm">{t("Workspace / Repositories")}</p>
-      <Typography variant="page-title" as="h1">{t("Repositories")}</Typography>
-      <p className="mt-2 text-muted-foreground type-body-sm">{t("Choose a repository to open its dashboard, or register a GitHub URL.")}</p>
-    </div>
+  return <div className="min-w-0 space-y-6">
+    <PageHeader title={t("Repositories")} icon={GitBranch} description={t("Choose a repository to open its dashboard, or register a GitHub URL.")}
+      actions={state.kind === "ready" && state.capabilities.repository_creation && <Button asChild><a href="#add-repository"><Plus size={16} />{t("Add repository")}</a></Button>} />
     {state.kind === "loading" && <LoadingState>{t("Loading repositories…")}</LoadingState>}
     {state.kind === "error" && <WorkspaceError error={state.error} retry={() => { setState({ kind: "loading" }); setRevision((value) => value + 1); }} />}
     {state.kind === "ready" && <>
-      <ModeNotice capabilities={state.capabilities} />
-      {state.capabilities.repository_creation && <CreateRepositoryForm />}
+      {state.capabilities.repository_storage === "prototype" && <ModeNotice capabilities={state.capabilities} />}
       <section aria-labelledby="repository-list-title" className="mt-7">
         <div className="mb-4 flex items-center justify-between gap-3">
           <Typography variant="section-title" as="h2" id="repository-list-title">{t("Your repositories")}</Typography>
@@ -63,23 +61,24 @@ export default function RepositoriesPage() {
         {state.repositories.length === 0
           ? page === 1 ? <EmptyRepositories canCreate={state.capabilities.repository_creation} /> : <p className="rounded-xl border bg-white p-8 text-muted-foreground type-body-sm">{t("No more repositories. Go back to the previous page.")}</p>
           : <div className="grid gap-4 xl:grid-cols-2">{state.repositories.map((repository) => <Card key={repository.id}>
-            <CardContent className="p-5">
+            <CardContent>
               <div className="mb-4 flex items-start gap-3">
                 <div className="rounded-xl border bg-slate-50 p-3"><GitBranch size={20} aria-hidden="true" /></div>
                 <div className="min-w-0 flex-1">
                   <Typography variant="card-title" as="h3" className="break-all">{repository.owner} / {repository.name}</Typography>
                   <p className="mt-1 break-all text-muted-foreground type-caption">{t("Branch")}: {repository.branch}</p>
                 </div>
-                {repository.access_level && <Badge>{repository.access_level}</Badge>}
+                {repository.access_level && <Badge variant="outline">{t(repository.access_level)}</Badge>}
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-                <Badge>{state.capabilities.repository_storage === "prototype" ? t("Sample data") : repository.status}</Badge>
+                <Badge variant="outline">{state.capabilities.repository_storage === "prototype" ? t("Sample data") : t(repository.status)}</Badge>
                 <Button asChild size="sm" variant="outline"><Link href={dashboardHref(repository.id)}>{t("Open dashboard")}<span className="sr-only"> for {repository.owner}/{repository.name}</span><ArrowRight size={14} aria-hidden="true" /></Link></Button>
               </div>
             </CardContent>
           </Card>)}</div>}
       </section>
       {state.capabilities.repository_storage === "postgres" && <PagePagination className="mt-5" page={page} hasNext={state.repositories.length >= PAGE_SIZE && page < 10000} onPageChange={navigatePage} />}
+      {state.capabilities.repository_creation && <div className="scroll-mt-24 space-y-4" id="add-repository"><GitHubRepositories /><Disclosure title={t("Register a repository URL")} description={t("Save a GitHub URL to organize its scans in your workspace.")} open={state.repositories.length === 0}><CreateRepositoryForm /></Disclosure></div>}
     </>}
   </div>;
 }
@@ -116,7 +115,7 @@ function CreateRepositoryForm() {
     }
   }
 
-  return <Card id="add-repository" className="scroll-mt-24">
+  return <Card className="border-0 py-0 shadow-none sm:py-0">
     <CardHeader><CardTitle>{t("Add repository")}</CardTitle><CardDescription>{t("Save repository details to your workspace. No code is downloaded and no GitHub permission is requested.")}</CardDescription></CardHeader>
     <CardContent>
       <form onSubmit={submit} className="space-y-4" aria-busy={submitting}>

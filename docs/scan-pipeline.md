@@ -1,5 +1,72 @@
 # Durable scan pipeline and web workflow
 
+## Mounted local paths (2026-11-02)
+
+Local Docker Compose enables `LOCAL_SCAN_ENABLED=true` on the API and mounts
+`C:/Users/thana/Documents/GitHub/IProgressX` read-only at `/scan-sources` in the worker
+(`LOCAL_SCAN_ROOT`). This is a workstation feature: every repository owner/editor
+can request a scan of any project in this shared mounted root. Disable it for shared hosting.
+
+On the selected repository dashboard, use **Scan a mounted local project** and enter
+`auditor-x` or a relative subfolder such as `auditor-x/frontend`. Full Windows paths
+inside the mounted host folder are also accepted, including quotes copied from Explorer.
+Compose uses `AUDITORX_LOCAL_SOURCE_ROOT` for both the bind mount and the API's
+`LOCAL_SCAN_HOST_ROOT` mapping; paths outside this root remain rejected.
+`POST /api/v1/repositories/{repo}/scans/local` accepts `{"path":"auditor-x"}`
+and queues a `local` source after authentication and membership checks. Migration 00010
+adds the source kind. Missing folders and source-limit violations fail the queued job.
+
+The worker reads files at execution time, makes a temporary snapshot and records its
+SHA-256 in the scan's Digest field. Edits while collecting the snapshot can affect which
+file versions are included. Parent/absolute paths and escaping symlinks are blocked by
+Go's rooted filesystem APIs; tree symlinks are rejected. Only supported source files and
+sanitized package manifests reach Semgrep; dependency/hidden directories and other file
+types are excluded. Local paths allow 2,000 files, 1 MiB/file and 20 MiB total;
+browser uploads retain their 1,000-file limit. Project code
+is never executed and the original project is never modified.
+
+Recreate services after changing configuration: `docker compose up -d --build`.
+
+**Next.js profile:** new scans now use `baseline-v3`, with Next.js checks enabled
+only for packages declaring `next` in a valid `package.json`. General language
+rules and historical scan versions are preserved. See [Next.js rules and limits](nextjs-rules.md).
+
+## Language-specific checks (2026-11-01)
+
+For each new scan, the worker detects supported languages from the extracted
+source files (`.go`, `.py`, `.js`/`.jsx`, `.ts`/`.tsx`) before running Semgrep.
+Only matching embedded rule blocks are sent to Semgrep; shared JavaScript/
+TypeScript rules also restrict their language list to the languages actually
+present. A Go-only scan uses four baseline-v2 checks, Python uses five,
+JavaScript or TypeScript uses five, and a mixed project uses their combined rules.
+Dependency and hidden directories remain excluded by source extraction.
+
+Migration `00008_scan_language_scope.sql` adds nullable `source_languages` and
+`checked_rule_ids` to scan jobs. Completed scans persist these with findings in
+the same transaction. Authenticated scan list/detail APIs return the scope under
+the existing repository membership rules. Scope is based on source files, so a
+scan with zero findings still lists every selected check for its languages.
+
+The checklist displays plain-language titles, explanations and categories in the
+selected Thai/English UI language, with the actual source languages and check
+count. Historical scans retain NULL scope because deleted source cannot be
+reconstructed from findings. Their checklist asks for a new scan and does not
+claim all catalog rules ran. A zero-match check is not a guarantee that all files
+were fully parsed or that the repository is free of that category of risk.
+
+Verified in Docker with real Semgrep: Go-only (4 checks, 1 finding), clean Go
+(4 checks, 0 findings), clean Python (5 checks), TypeScript-only (5 checks), and
+Go+Python (9 checks). Browser checks passed Thai/English title and explanation
+switching, zero-finding coverage, historical-scan notices and mobile overflow.
+Backend format/vet/tests/build, all 80 frontend tests, 21 isolated database tests,
+and the Docker production build passed.
+
+**Local Docker update (2026-11-01):** `docker compose up -d --build` now provisions
+a dedicated worker login, starts the pinned Semgrep worker and enables the scan
+queue by default. Open a repository dashboard to use **Choose folder / Choose ZIP**.
+No GitHub connection is needed for local uploads. The older manual/Supabase setup
+below is historical; see [current local Docker setup](local-database.md).
+
 Implemented 2026-08-28. Real Semgrep scanning, durable queue state, and authenticated
 result APIs are implemented, with scan controls, history, polling and actual findings
 on the web dashboard. No production/shared database was migrated or worker deployed.
@@ -22,6 +89,10 @@ on the web dashboard. No production/shared database was migrated or worker deplo
   that SHA's ZIP from codeload.github.com. Requests use fixed GitHub hosts, no credentials,
   no configured HTTP proxy, and reject redirects. Private repositories and renamed-repo
   redirects are intentionally unsupported in this slice.
+  Optional [GitHub App connection](github-integration.md) now adds selected private
+  repository retrieval for imported repositories, using the requester's encrypted
+  user token and current installation access. It resolves immutable numeric repo
+  IDs; the original URL-only adapter remains public-only.
 - Owners/editors may instead upload a local project folder or ZIP through the dashboard.
   Uploads use the same queue, rules and extraction limits. The archive is stored in a dedicated
   RLS/forced-RLS table that never grants clients access to the archive bytes; the worker verifies

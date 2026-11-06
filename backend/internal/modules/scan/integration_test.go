@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -33,8 +34,12 @@ func (f fixtureSource) Fetch(_ context.Context, _ Job, destination string) (stri
 
 type fixedAnalyzer struct{}
 
-func (fixedAnalyzer) Analyze(context.Context, string, string) (Result, error) {
-	return Result{ScannerVersion: "1.175.0", Findings: []Finding{{Fingerprint: strings.Repeat("f", 64), RuleID: "auditorx.python.dynamic-eval", Severity: "High", File: "app.py", Line: 3, EndLine: 3, Message: "Avoid dynamic code evaluation"}}}, nil
+func (fixedAnalyzer) Analyze(_ context.Context, _ string, version string) (Result, error) {
+	_, ids, err := scopedRules(version, []string{"python"})
+	if err != nil {
+		return Result{}, err
+	}
+	return Result{SourceLanguages: []string{"python"}, CheckedRuleIDs: ids, ScannerVersion: "1.175.0", Findings: []Finding{{Fingerprint: strings.Repeat("f", 64), RuleID: ids[0], Severity: "High", File: "app.py", Line: 3, EndLine: 3, Message: "Avoid dynamic code evaluation"}}}, nil
 }
 
 func TestPostgresIntegration(t *testing.T) {
@@ -167,6 +172,9 @@ func TestPostgresIntegration(t *testing.T) {
 	if err != nil || result.Status != "completed" || result.CommitSHA == nil {
 		t.Fatalf("result: %+v %v", result, err)
 	}
+	if len(result.SourceLanguages) != 1 || result.SourceLanguages[0] != "python" || len(result.CheckedRuleIDs) != 5 {
+		t.Fatalf("language/rule scope not persisted: %+v", result)
+	}
 	rec := api(alice, "GET", base+"/"+accepted.ID+"/findings", "")
 	if rec.Code != 200 {
 		t.Fatalf("findings: %d %s", rec.Code, rec.Body)
@@ -249,6 +257,64 @@ func TestPostgresIntegration(t *testing.T) {
 	failed, err := store.Get(ctx, alice, repo.ID, exhausted.ID)
 	if err != nil || failed.Status != "failed" || failed.ErrorCode == nil || *failed.ErrorCode != "RETRY_EXHAUSTED" {
 		t.Fatalf("exhaustion: %+v %v", failed, err)
+	}
+
+	// Local jobs use the same RLS queue and persist snapshot results.
+	localRoot := t.TempDir()
+	if err = os.Mkdir(filepath.Join(localRoot, "project"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(filepath.Join(localRoot, "project", "app.py"), []byte("eval(input())"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	localJob, err := store.EnqueueLocal(ctx, alice, repo.ID, "main", "project")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = store.EnqueueLocal(ctx, bob, repo.ID, "main", "project"); err == nil {
+		t.Fatal("cross-user local enqueue accepted")
+	}
+	localWorker := Worker{Queue: store, Source: LocalSource{Root: localRoot}, Analyzer: fixedAnalyzer{}}
+	if worked, e := localWorker.RunOne(ctx); e != nil || !worked {
+		t.Fatalf("local worker: %v", e)
+	}
+	localResult, err := store.Get(ctx, alice, repo.ID, localJob.ID)
+	if err != nil || localResult.Status != "completed" || localResult.SourceKind != "local" || localResult.CommitSHA == nil || !uploadDigestPattern.MatchString(*localResult.CommitSHA) {
+		t.Fatalf("local result: %+v %v", localResult, err)
+	}
+
+	// Labels are append-only, scoped to completed findings, and reviewer is authenticated.
+	input := LabelInput{RepositoryGroup: "fixture", ReviewStatus: "accepted", PriorityLabel: "High", RepositoryCriticality: "normal", Exposure: "public", Impact: "high", LabelReason: "Confirmed public input"}
+	fingerprint := strings.Repeat("f", 64)
+	firstLabel, err := store.SaveLabel(ctx, alice, repo.ID, localJob.ID, fingerprint, input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if firstLabel.Reviewer != alice || firstLabel.GuidelineVersion != "priority-labels-3class-v1" {
+		t.Fatalf("label provenance: %+v", firstLabel)
+	}
+	input.PriorityLabel = "Low"
+	input.LabelReason = "Reviewed again: demo-only impact"
+	secondLabel, err := store.SaveLabel(ctx, alice, repo.ID, localJob.ID, fingerprint, input)
+	if err != nil || secondLabel.ID <= firstLabel.ID {
+		t.Fatalf("append label: %v", err)
+	}
+	labels, err := store.Labels(ctx, alice, repo.ID, localJob.ID)
+	if err != nil || len(labels) != 1 || labels[0].PriorityLabel != "Low" {
+		t.Fatalf("latest labels: %+v %v", labels, err)
+	}
+	var revisions int
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM public.priority_labels WHERE scan_id=$1::uuid`, localJob.ID).Scan(&revisions); err != nil || revisions != 2 {
+		t.Fatalf("history missing: %d %v", revisions, err)
+	}
+	if _, err = store.SaveLabel(ctx, bob, repo.ID, localJob.ID, fingerprint, input); err == nil {
+		t.Fatal("outsider labeled finding")
+	}
+	if rows, e := store.Labels(ctx, bob, repo.ID, localJob.ID); e != nil || len(rows) != 0 {
+		t.Fatalf("outsider read labels: %v", e)
+	}
+	if _, err = store.SaveLabel(ctx, alice, repo.ID, localJob.ID, strings.Repeat("0", 64), input); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("unknown finding: %v", err)
 	}
 
 	revoked, err := store.Enqueue(ctx, alice, repo.ID, "main")

@@ -39,12 +39,57 @@ type Handler struct {
 var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
 func (h Handler) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /api/v1/repositories/{repositoryID}/scans/{scanID}/labels", h.Labels)
+	mux.HandleFunc("POST /api/v1/repositories/{repositoryID}/scans/{scanID}/findings/{fingerprint}/labels", h.SaveLabel)
+	mux.HandleFunc("POST /api/v1/repositories/{repositoryID}/scans/local", h.EnqueueLocal)
 	mux.HandleFunc("POST /api/v1/repositories/{repositoryID}/scans", h.Enqueue)
 	mux.HandleFunc("POST /api/v1/repositories/{repositoryID}/scans/upload", h.EnqueueUpload)
 	mux.HandleFunc("GET /api/v1/repositories/{repositoryID}/scans", h.List)
 	mux.HandleFunc("GET /api/v1/repositories/{repositoryID}/scans/{scanID}", h.Get)
 	mux.HandleFunc("GET /api/v1/repositories/{repositoryID}/scans/{scanID}/findings", h.Findings)
 	mux.HandleFunc("POST /api/v1/repositories/{repositoryID}/scans/{scanID}/cancel", h.Cancel)
+}
+
+func (h Handler) EnqueueLocal(w http.ResponseWriter, r *http.Request) {
+	repo, ok := h.repository(w, r, true)
+	if !ok {
+		return
+	}
+	if os.Getenv("LOCAL_SCAN_ENABLED") != "true" {
+		response.Error(w, 503, "LOCAL_SCAN_DISABLED", "Local path scanning is disabled.")
+		return
+	}
+	var input struct {
+		Path string `json:"path"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 2048)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	decodeErr := decoder.Decode(&input)
+	localPath, valid := normalizeLocalPath(input.Path, os.Getenv("LOCAL_SCAN_HOST_ROOT"))
+	if decodeErr != nil || !valid {
+		response.Error(w, 400, "INVALID_LOCAL_PATH", "Enter a project name or a full path inside the configured mounted folder. Paths outside that folder and parent traversal are not allowed.")
+		return
+	}
+	var extra any
+	if decoder.Decode(&extra) != io.EOF {
+		response.Error(w, 400, "INVALID_LOCAL_PATH", "Send one JSON object.")
+		return
+	}
+	store, ok := h.Jobs.(interface {
+		EnqueueLocal(context.Context, string, string, string, string) (Job, error)
+	})
+	if !ok {
+		response.Error(w, 503, "LOCAL_SCAN_DISABLED", "Local path scanning is unavailable.")
+		return
+	}
+	job, err := store.EnqueueLocal(r.Context(), identity.UserID(r.Context()), repo.ID, repo.Branch, localPath)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	w.Header().Set("Location", "/api/v1/repositories/"+repo.ID+"/scans/"+job.ID)
+	response.JSON(w, 202, map[string]any{"data": job})
 }
 
 func (h Handler) EnqueueUpload(w http.ResponseWriter, r *http.Request) {

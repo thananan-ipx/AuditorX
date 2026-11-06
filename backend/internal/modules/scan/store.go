@@ -38,11 +38,11 @@ func (s *Store) begin(ctx context.Context, actor string, worker bool) (pgx.Tx, e
 	return tx, nil
 }
 
-const jobColumns = `id::text,repository_id::text,requested_by::text,branch,rules_version,status,attempts,commit_sha,scanner_version,error_code,source_kind,source_name,source_digest,created_at,started_at,finished_at`
+const jobColumns = `id::text,repository_id::text,requested_by::text,branch,rules_version,status,attempts,commit_sha,scanner_version,error_code,source_kind,source_name,source_digest,created_at,started_at,finished_at,source_languages,checked_rule_ids`
 
 func readJob(row interface{ Scan(...any) error }) (Job, error) {
 	var j Job
-	err := row.Scan(&j.ID, &j.RepositoryID, &j.RequestedBy, &j.Branch, &j.RulesVersion, &j.Status, &j.Attempts, &j.CommitSHA, &j.ScannerVersion, &j.ErrorCode, &j.SourceKind, &j.SourceName, &j.SourceDigest, &j.CreatedAt, &j.StartedAt, &j.FinishedAt)
+	err := row.Scan(&j.ID, &j.RepositoryID, &j.RequestedBy, &j.Branch, &j.RulesVersion, &j.Status, &j.Attempts, &j.CommitSHA, &j.ScannerVersion, &j.ErrorCode, &j.SourceKind, &j.SourceName, &j.SourceDigest, &j.CreatedAt, &j.StartedAt, &j.FinishedAt, &j.SourceLanguages, &j.CheckedRuleIDs)
 	return j, translate(err)
 }
 func translate(err error) error {
@@ -84,6 +84,19 @@ func (s *Store) EnqueueUpload(ctx context.Context, actor, repo, branch, name, di
 		return Job{}, err
 	}
 	return job, tx.Commit(ctx)
+}
+
+func (s *Store) EnqueueLocal(ctx context.Context, actor, repo, branch, name string) (Job, error) {
+	tx, err := s.begin(ctx, actor, false)
+	if err != nil {
+		return Job{}, err
+	}
+	defer rollback(tx)
+	j, err := readJob(tx.QueryRow(ctx, `INSERT INTO public.scan_jobs(repository_id,requested_by,branch,source_kind,source_name) VALUES ($1::uuid,$2::uuid,$3,'local',$4) RETURNING `+jobColumns, repo, actor, branch, name))
+	if err != nil {
+		return Job{}, err
+	}
+	return j, tx.Commit(ctx)
 }
 
 func (s *Store) Get(ctx context.Context, actor, repo, id string) (Job, error) {
@@ -244,7 +257,12 @@ func (s *Store) Finish(ctx context.Context, j Job, result Result, errorCode stri
 		}
 		status = "completed"
 	}
-	_, err = tx.Exec(ctx, `UPDATE public.scan_jobs SET status=$3,commit_sha=nullif($4,''),scanner_version=nullif($5,''),error_code=nullif($6,''),finished_at=now(),lease_token=NULL,lease_expires_at=NULL WHERE id=$1::uuid AND lease_token=$2::uuid`, j.ID, j.LeaseToken, status, result.CommitSHA, result.ScannerVersion, errorCode)
+	var languages, checkedRules []string
+	if status == "completed" {
+		languages = result.SourceLanguages
+		checkedRules = result.CheckedRuleIDs
+	}
+	_, err = tx.Exec(ctx, `UPDATE public.scan_jobs SET status=$3,commit_sha=nullif($4,''),scanner_version=nullif($5,''),error_code=nullif($6,''),source_languages=$7,checked_rule_ids=$8,finished_at=now(),lease_token=NULL,lease_expires_at=NULL WHERE id=$1::uuid AND lease_token=$2::uuid`, j.ID, j.LeaseToken, status, result.CommitSHA, result.ScannerVersion, errorCode, languages, checkedRules)
 	if err != nil {
 		return err
 	}

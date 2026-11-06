@@ -7,6 +7,8 @@
 
 ---
 
+> **Go rule update:** New local scans now use `baseline-v4` (21 rules total; 4 Go rules). See [Go review and regression coverage](../../go-rules.md). The v2 description below is retained as historical implementation context.
+
 ## 1. Purpose
 
 กำหนดแนวทางเลือก จัดกลุ่ม และบริหาร Semgrep Rules สำหรับ AuditorX

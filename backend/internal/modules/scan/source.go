@@ -35,10 +35,16 @@ type Source interface {
 // JobSource selects only between the two source kinds persisted by the API.
 // Uploaded archives have already passed the same extraction validation once,
 // but are hashed and validated again at the worker trust boundary.
-type JobSource struct{}
+type JobSource struct{ GitHub Source }
 
-func (JobSource) Fetch(ctx context.Context, j Job, destination string) (string, error) {
+func (s JobSource) Fetch(ctx context.Context, j Job, destination string) (string, error) {
+	if j.SourceKind == "local" {
+		return (LocalSource{Root: os.Getenv("LOCAL_SCAN_ROOT")}).Fetch(ctx, j, destination)
+	}
 	if j.SourceKind != "upload" {
+		if s.GitHub != nil {
+			return s.GitHub.Fetch(ctx, j, destination)
+		}
 		return (GitHubSource{}).Fetch(ctx, j, destination)
 	}
 	if j.SourceDigest == nil || !uploadDigestPattern.MatchString(*j.SourceDigest) || len(j.Archive) == 0 {
@@ -122,6 +128,10 @@ func extractUploadedSource(data []byte, destination string) error {
 }
 
 func extractArchive(data []byte, destination string, requireWrapper bool) error {
+	return extractArchiveWithLimit(data, destination, requireWrapper, 1000)
+}
+
+func extractArchiveWithLimit(data []byte, destination string, requireWrapper bool, maxFiles int) error {
 	if len(data) > maxArchiveBytes {
 		return errors.New("archive too large")
 	}
@@ -140,6 +150,7 @@ func extractArchive(data []byte, destination string, requireWrapper bool) error 
 	}
 	total := int64(0)
 	count := 0
+	sourceCount := 0
 	for _, entry := range reader.File {
 		name := strings.TrimSuffix(entry.Name, "/")
 		parts := strings.Split(name, "/")
@@ -192,15 +203,19 @@ func extractArchive(data []byte, destination string, requireWrapper bool) error 
 			}
 		}
 		extension := strings.ToLower(path.Ext(relative))
-		if skip || (extension != ".py" && extension != ".js" && extension != ".jsx" && extension != ".ts" && extension != ".tsx" && extension != ".go") {
+		manifest := path.Base(relative) == "package.json"
+		if skip || (!manifest && extension != ".py" && extension != ".js" && extension != ".jsx" && extension != ".ts" && extension != ".tsx" && extension != ".go") {
 			continue
 		}
 		if entry.UncompressedSize64 > maxFileBytes {
 			return errors.New("source file too large")
 		}
+		if manifest && entry.UncompressedSize64 > maxManifestBytes {
+			return errors.New("package manifest exceeds size limit")
+		}
 		total += int64(entry.UncompressedSize64)
 		count++
-		if total > maxSourceBytes || count > 1000 {
+		if total > maxSourceBytes || count > maxFiles {
 			return errors.New("source limit exceeded")
 		}
 		target := filepath.Join(destination, filepath.FromSlash(relative))
@@ -214,6 +229,24 @@ func extractArchive(data []byte, destination string, requireWrapper bool) error 
 		if e != nil {
 			return e
 		}
+		if manifest {
+			data, readErr := io.ReadAll(io.LimitReader(input, maxManifestBytes+1))
+			closeErr := input.Close()
+			if readErr != nil {
+				return readErr
+			}
+			if closeErr != nil {
+				return closeErr
+			}
+			if len(data) > maxManifestBytes {
+				return errors.New("package manifest exceeds size limit")
+			}
+			if e = os.WriteFile(target, sanitizedManifest(data), 0600); e != nil {
+				return e
+			}
+			continue
+		}
+		sourceCount++
 		output, e := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 		if e != nil {
 			input.Close()
@@ -232,7 +265,7 @@ func extractArchive(data []byte, destination string, requireWrapper bool) error 
 			return errors.New("source file too large")
 		}
 	}
-	if count == 0 {
+	if sourceCount == 0 {
 		return errors.New("no supported source files")
 	}
 	return nil

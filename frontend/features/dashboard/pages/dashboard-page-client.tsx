@@ -3,6 +3,7 @@ import { Typography } from "@/components/ui/typography";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Feedback } from "@/components/shared/feedback";
+import { PageHeader } from "@/components/shared/workspace-ui";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -59,17 +60,14 @@ export default function DashboardPage({ repositoryID }: { repositoryID?: string 
   };
 
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 space-y-6">
       {state.kind === "loading" ? <DashboardSkeleton /> : state.kind === "error"
         ? <WorkspaceError error={state.error} returnTo={repositoryID ? dashboardHref(repositoryID) : "/dashboard"} retry={() => { setState({ kind: "loading" }); setRevision((value) => value + 1); }} />
         : <>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-muted-foreground type-body-sm">{state.kind === "empty" ? t("Workspace overview") : `${state.repository.owner} / ${state.repository.name}`}</p>
-            <Button asChild variant="outline"><Link href="/repositories">{t("Choose repository")} <ArrowRight size={14} /></Link></Button>
-          </div>
-          <ModeNotice capabilities={state.capabilities} />
+          {state.kind === "scans" ? null : state.kind === "ready" ? <div className="flex justify-end"><Button asChild variant="ghost" size="sm"><Link href="/repositories">{t("Choose repository")} <ArrowRight size={14} /></Link></Button></div> : <PageHeader title={t("Workspace overview")} description={state.kind === "empty" ? t("Choose a repository to start reviewing code.") : `${state.repository.owner} / ${state.repository.name}`} actions={<Button asChild variant="outline"><Link href="/repositories">{t("Choose repository")} <ArrowRight size={14} /></Link></Button>} />}
+          {state.capabilities.repository_storage === "prototype" && <ModeNotice capabilities={state.capabilities} />}
           {state.kind === "empty" ? <EmptyRepositories canCreate={state.capabilities.repository_creation} />
-            : state.kind === "unscanned" ? <><Typography variant="page-title" as="h1" className="mb-5">{t("Repository overview")}</Typography><UnscannedRepository repository={state.repository} /></>
+            : state.kind === "unscanned" ? <UnscannedRepository repository={state.repository} />
             : state.kind === "scans" ? <RepositoryScans key={state.repository.id} repository={state.repository} />
             : <>
               {scanStatus && <Feedback>{scanStatus}</Feedback>}

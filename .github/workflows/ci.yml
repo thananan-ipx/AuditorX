@@ -59,6 +59,11 @@ jobs:
         env:
           AUDITORX_TEST_SEMGREP: ${{ github.workspace }}/tools/scanner-env/bin/semgrep
         run: ./scripts/verify.ps1 -Target database
+      - name: Verify scanner rules including Next.js safe and unsafe fixtures
+        working-directory: backend
+        env:
+          AUDITORX_TEST_SEMGREP: ${{ github.workspace }}/tools/scanner-env/bin/semgrep
+        run: go test -count=1 -timeout=2m -run '^TestSemgrep(Fixture|RuleCatalog|NextJS)$' -v ./internal/modules/scan
 
   frontend:
     name: Frontend checks

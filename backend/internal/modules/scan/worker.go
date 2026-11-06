@@ -3,6 +3,7 @@ package scan
 import (
 	"context"
 	"errors"
+	"github.com/IProgressX/auditor-x/backend/internal/shared/github"
 	"os"
 	"time"
 )
@@ -39,9 +40,12 @@ func (w Worker) RunOne(ctx context.Context) (bool, error) {
 		sha, fetchErr := w.Source.Fetch(scanCtx, job, directory)
 		if fetchErr != nil {
 			code = "SOURCE_UNAVAILABLE"
-		} else if job.SourceKind == "upload" && !uploadDigestPattern.MatchString(sha) {
+			if errors.Is(fetchErr, github.ErrAccess) {
+				code = "GITHUB_ACCESS_REQUIRED"
+			}
+		} else if (job.SourceKind == "upload" || job.SourceKind == "local") && !uploadDigestPattern.MatchString(sha) {
 			code = "INVALID_SOURCE_DIGEST"
-		} else if job.SourceKind != "upload" && !shaPattern.MatchString(sha) {
+		} else if job.SourceKind != "upload" && job.SourceKind != "local" && !shaPattern.MatchString(sha) {
 			code = "INVALID_COMMIT"
 		} else {
 			result, err = w.Analyzer.Analyze(scanCtx, directory, job.RulesVersion)

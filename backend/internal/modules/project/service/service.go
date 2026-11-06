@@ -98,3 +98,6 @@ func validate(input entity.CreateInput) (entity.NewRepository, error) {
 	}
 	return entity.NewRepository{Name: name, Owner: owner, URL: "https://github.com/" + owner + "/" + name, Branch: branch}, nil
 }
+
+// ValidateInput shares canonical URL and branch validation with GitHub imports.
+func ValidateInput(input entity.CreateInput) (entity.NewRepository, error) { return validate(input) }

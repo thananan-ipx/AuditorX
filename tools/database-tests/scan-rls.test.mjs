@@ -37,8 +37,8 @@ test('members can read status but not other users or lease tokens', async () => 
   assert.equal((await asUser(db, bob, tx => tx.query('SELECT id FROM public.scan_jobs WHERE repository_id=$1', [repo]))).rows.length, 0);
   await assert.rejects(asUser(db, alice, tx => tx.query('SELECT lease_token FROM public.scan_jobs')));
 });
-test('new scans use baseline-v2 while historical baseline-v1 remains valid', async () => {
-  assert.equal((await db.query('SELECT rules_version FROM public.scan_jobs WHERE id=$1', [scan])).rows[0].rules_version, 'baseline-v2');
+test('new scans use baseline-v4 while historical rules remain valid', async () => {
+  assert.equal((await db.query('SELECT rules_version FROM public.scan_jobs WHERE id=$1', [scan])).rows[0].rules_version, 'baseline-v4');
   await db.query("UPDATE public.scan_jobs SET rules_version='baseline-v1' WHERE id=$1", [scan]);
   assert.equal((await db.query('SELECT rules_version FROM public.scan_jobs WHERE id=$1', [scan])).rows[0].rules_version, 'baseline-v1');
   await assert.rejects(db.query("UPDATE public.scan_jobs SET rules_version='unknown' WHERE id=$1", [scan]));

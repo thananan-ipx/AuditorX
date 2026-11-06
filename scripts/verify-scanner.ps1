@@ -10,7 +10,7 @@ try {
     $env:AUDITORX_TEST_SEMGREP = $resolvedScanner
     Push-Location (Join-Path $projectRoot 'backend')
     try {
-        & go test -count=1 -timeout=60s -run TestSemgrepFixture -v ./internal/modules/scan
+        & go test -count=1 -timeout=3m -run '^Test(GoV4ScopeAndHistoricalRules|Semgrep(Fixture|RuleCatalog|NextJS|NextLab|GoRulesV4))$' -v ./internal/modules/scan
         if ($LASTEXITCODE -ne 0) { throw 'Real Semgrep fixture test failed' }
     }
     finally { Pop-Location }

@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { ScanWorkspace, failureMessage, filterFindings } from "../features/scans/components/repository-scans";
+import { ScanWorkspace, RuleCoverage, failureMessage, filterFindings } from "../features/scans/components/repository-scans";
 import type { ScanState } from "../features/scans/service/scan-controller";
 import type { Scan, Finding } from "../features/scans/types";
 import { ApiError } from "../lib/api-client";
+import { RULE_CATALOG, coverageRules } from "../features/scans/rule-catalog";
 
 const repository = { id: "repo-1", owner: "owner", name: "project", branch: "main", status: "Connected" };
 const scan: Scan = { id: "scan-1", repository_id: repository.id, requested_by: "user-1", branch: "main", status: "completed", attempts: 1, commit_sha: "abc123", rules_version: "baseline-v1", scanner_version: "1.175.0", error_code: null, source_kind: "github", source_name: null, source_digest: null, created_at: "2026-08-28T09:00:00Z", started_at: null, finished_at: null };
@@ -24,17 +25,22 @@ test("real completed results show file, line, rule, version and commit with esca
   assert.match(html, /1.175.0/);
   assert.match(html, /&lt;script&gt;/);
   assert.doesNotMatch(html, /<script>|Code quality score|AI analysis|Predicted priority|Simulate scan/);
-  assert.match(html, /aria-pressed="true"/);
+  assert.match(html, /id="scan-history"/);
+  assert.match(html, /role="combobox"/);
   assert.match(html, /Latest 20 scans/);
 });
 
-test("owners can choose a local folder or ZIP and uploaded scan metadata is labeled", () => {
+test("scan setup is collapsed for existing results and first-scan upload controls remain available", () => {
   const uploaded = { ...scan, source_kind: "upload" as const, source_name: "project.zip", source_digest: "a".repeat(64), commit_sha: "a".repeat(64) };
   const html = render({ ...ready, jobs: [uploaded], selected: uploaded });
-  assert.match(html, /Scan code from this computer/);
-  assert.match(html, /Choose folder/);
-  assert.match(html, /Choose ZIP/);
-  assert.match(html, /Local upload: project.zip/);
+  assert.match(html, /New scan/);
+  assert.match(html, /aria-expanded="false"/);
+  assert.doesNotMatch(html, /Choose folder|Choose ZIP/);
+  const empty = render({ ...ready, jobs: [], selected: null, findings: null });
+  assert.match(empty, /Choose folder/);
+  assert.match(empty, /Choose ZIP/);
+  assert.match(empty, /Scan source/);
+  assert.match(html, /project.zip/);
   assert.match(html, /Digest/);
 });
 
@@ -54,7 +60,7 @@ test("queued scan explains worker uncertainty and allows cancel but not a second
   assert.match(html, /does not confirm that a worker is online/);
   assert.match(html, /no completion estimate/);
   assert.match(html, /Cancel scan/);
-  assert.match(html, /<button[^>]*disabled=""[^>]*>[\s\S]*?Start scan/);
+  assert.match(html, /<button[^>]*disabled=""[^>]*>[\s\S]*?New scan/);
   assert.doesNotMatch(html, /src\/app.py/);
 });
 
@@ -101,4 +107,48 @@ test("findings are paginated to 50 rows and all severity totals remain visible",
 test("failure messages are bounded and unknown worker text is not reflected", () => {
   for (const code of ["SOURCE_UNAVAILABLE", "INVALID_COMMIT", "INVALID_SOURCE_DIGEST", "SCANNER_FAILED", "SCAN_TIMEOUT", "ACCESS_REVOKED", "RETRY_EXHAUSTED"]) assert.ok(failureMessage(code).length > 30);
   assert.doesNotMatch(failureMessage("secret SQL credentials"), /secret|SQL|credentials/);
+});
+
+test("Go coverage includes zero-finding rules but never Python or JavaScript checks", () => {
+  const ids = RULE_CATALOG["baseline-v2"].filter(rule => rule.languages.includes("go")).map(rule => rule.id);
+  const selected: Scan = { ...scan, rules_version: "baseline-v2", source_languages: ["go"], checked_rule_ids: ids };
+  const html = renderToStaticMarkup(createElement(RuleCoverage, { scan: selected, findings: [] }));
+  assert.match(html, /4 checks/);
+  assert.match(html, /TLS certificate checks disabled/);
+  assert.match(html, /JSON errors left unchecked/);
+  assert.match(html, /No matches/);
+  assert.doesNotMatch(html, /Python|JavaScript|Running text as code|SQL queries/);
+});
+
+test("historical scans show unknown coverage without inferring it from findings", () => {
+  const html = render(ready);
+  assert.match(html, /did not record its language and rule coverage/);
+  assert.doesNotMatch(html, /Every rule below ran|TLS certificate checks disabled|Running text as code/);
+});
+
+test("coverage respects recorded rules and mixed source languages", () => {
+  const catalog = RULE_CATALOG["baseline-v2"];
+  assert.equal(coverageRules("baseline-v2", catalog.map(rule => rule.id), ["go", "python"]).length, 9);
+  assert.equal(coverageRules("baseline-v2", ["auditorx.go.security.hardcoded-secret"], ["go"]).length, 1);
+  assert.equal(coverageRules("baseline-v2", catalog.map(rule => rule.id), ["typescript"]).length, 5);
+});
+
+test("Next.js coverage is opt-in through recorded rule IDs and labels manual checks clearly", () => {
+  const nextRules = RULE_CATALOG["baseline-v3"].filter(rule => rule.languages.includes("typescript"));
+  const selected: Scan = { ...scan, rules_version: "baseline-v3", source_languages: ["typescript"], checked_rule_ids: nextRules.map(rule => rule.id) };
+  const html = renderToStaticMarkup(createElement(RuleCoverage, { scan: selected, findings: [] }));
+  assert.match(html, /Next.js/);
+  assert.match(html, /Request data rendered as raw HTML/);
+  assert.match(html, /Public API URLs and anonymous public keys/);
+  assert.match(html, /Manual review/);
+  assert.match(html, /Review required/);
+  assert.match(html, /does not mean these checks are missing/);
+  const plain = { ...selected, checked_rule_ids: nextRules.filter(rule => !rule.framework).map(rule => rule.id) };
+  const plainHTML = renderToStaticMarkup(createElement(RuleCoverage, { scan: plain, findings: [] }));
+  assert.doesNotMatch(plainHTML, /Next.js|Review required|dangerouslySetInnerHTML/);
+});
+
+test("Next.js advisory findings remain marked as requiring review", () => {
+  const review = { ...finding, rule_id: "auditorx.nextjs.review.server-action-access", severity: "Low" as const, message: "Manual review required for this Server Action." };
+  assert.match(render({ ...ready, findings: [review] }), /Review required/);
 });

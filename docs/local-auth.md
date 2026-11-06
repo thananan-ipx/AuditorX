@@ -1,7 +1,9 @@
 # Local website accounts
 
-The website authenticates directly against PostgreSQL in Docker. No Supabase Auth
-URL, publishable key, JWT secret or outbound identity-provider request is used.
+The website stores accounts and sessions in PostgreSQL in Docker. Email/password
+authentication needs no Supabase Auth URL, publishable key, JWT secret or outbound
+identity-provider request. Optional [GitHub sign-in](github-integration.md) verifies
+the external GitHub identity and then creates the same local opaque session.
 Use **Create account** on the Login page to register and sign in immediately.
 The email is a login identifier; mailbox ownership is not verified and no email
 confirmation is sent.
@@ -11,6 +13,8 @@ confirmation is sent.
 - `auth.users` stores UUID, normalized lowercase email and an Argon2id password
   hash with a random 16-byte salt, 19 MiB memory, two passes and one lane.
   Passwords accept 8–128 Unicode characters. Concurrent hashing is bounded.
+  GitHub-only accounts have a verified GitHub email and no password hash; local
+  email/password sign-in cannot authenticate them.
 - `auth.sessions` stores only the SHA-256 digest of a random 256-bit opaque token,
   its owner and expiry. The raw token is carried in an `HttpOnly`, `SameSite=Lax`
   cookie. Set `COOKIE_SECURE=true` when using HTTPS.

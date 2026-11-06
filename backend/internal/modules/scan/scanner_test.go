@@ -182,6 +182,17 @@ func TestSemgrepFixture(t *testing.T) {
 		if len(result.Findings) != 1 || result.Findings[0].RuleID != rule || result.Findings[0].File != "app.py" || result.Findings[0].Line != 3 {
 			t.Fatalf("unexpected %s result: %+v", version, result)
 		}
+		if len(result.SourceLanguages) != 1 || result.SourceLanguages[0] != "python" {
+			t.Fatalf("incorrect recorded languages: %v", result.SourceLanguages)
+		}
+		for _, id := range result.CheckedRuleIDs {
+			if !strings.HasPrefix(id, "auditorx.python.") {
+				t.Fatalf("unrelated rule ran on Python: %s", id)
+			}
+		}
+		if len(result.CheckedRuleIDs) == 0 {
+			t.Fatal("scan scope was not recorded")
+		}
 		t.Logf("Semgrep %s ran %s and found %s at %s:%d", result.ScannerVersion, version, result.Findings[0].RuleID, result.Findings[0].File, result.Findings[0].Line)
 	}
 }

@@ -36,6 +36,22 @@ export async function database() {
     await db.exec(uploadMigration);
     const localAuth = await readFile(new URL('../../backend/migrations/00006_local_auth.sql', import.meta.url), 'utf8');
     await db.exec(localAuth.split('-- +goose Up')[1].split('-- +goose Down')[0]);
+    const githubAccounts = await readFile(new URL('../../backend/migrations/00007_github_accounts.sql', import.meta.url), 'utf8');
+    await db.exec(githubAccounts.split('-- +goose Up')[1].split('-- +goose Down')[0]);
+    const scanScope = await readFile(new URL('../../backend/migrations/00008_scan_language_scope.sql', import.meta.url), 'utf8');
+    await db.exec(scanScope.split('-- +goose Up')[1].split('-- +goose Down')[0]);
+    const nextRules = await readFile(new URL('../../backend/migrations/00009_nextjs_rules.sql', import.meta.url), 'utf8');
+    await db.exec(nextRules.split('-- +goose Up')[1].split('-- +goose Down')[0]);
+    const localSources = await readFile(new URL('../../backend/migrations/00010_local_scan_sources.sql', import.meta.url), 'utf8');
+    await db.exec(localSources.split('-- +goose Up')[1].split('-- +goose Down')[0]);
+    const priorityLabels = await readFile(new URL('../../backend/migrations/00011_priority_labels.sql', import.meta.url), 'utf8');
+    await db.exec(priorityLabels.split('-- +goose Up')[1].split('-- +goose Down')[0]);
+    const goRules = await readFile(new URL('../../backend/migrations/00012_go_rules_v4.sql', import.meta.url), 'utf8');
+    await db.exec(goRules.split('-- +goose Up')[1].split('-- +goose Down')[0]);
+    const syntheticDataset = await readFile(new URL('../../backend/migrations/00013_synthetic_training_dataset.sql', import.meta.url), 'utf8');
+    await db.exec(syntheticDataset.split('-- +goose Up')[1].split('-- +goose Down')[0]);
+    const simulatedLabels = await readFile(new URL('../../backend/migrations/00014_simulated_priority_labels.sql', import.meta.url), 'utf8');
+    await db.exec(simulatedLabels.split('-- +goose Up')[1].split('-- +goose Down')[0]);
     return db;
   } catch (err) {
     await db.close();

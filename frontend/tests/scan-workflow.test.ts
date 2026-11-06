@@ -25,6 +25,7 @@ function harness(overrides: Partial<typeof scanService> = {}, canWrite = true) {
   const delays: number[] = [];
   const calls = { list: 0, get: 0, findings: 0, start: 0, upload: 0, cancel: 0 };
   const api: typeof scanService = {
+    local: async () => ({ ...job(), source_kind: "local", source_name: "auditor-x" }),
     list: async () => { calls.list++; return [job()]; },
     get: async (_repo, id) => { calls.get++; return job("queued", id); },
     findings: async () => { calls.findings++; return [finding]; },
@@ -200,6 +201,21 @@ test("local upload uses the same mutation lock and selects its queued job", asyn
   assert.equal(received, source);
   assert.equal(h.controller.getSnapshot().selected?.source_kind, "upload");
   assert.match(h.controller.getSnapshot().notice, /Local source uploaded/);
+});
+
+test("local path queues once, blocks duplicate actions and selects the job", async (t) => {
+  const response = deferred<Scan>();
+  let posts = 0, received = "", created = false;
+  const local = { ...job(), source_kind: "local" as const, source_name: "auditor-x" };
+  const h = harness({ list: async () => created ? [local] : [], get: async () => local,
+    local: async (_repo, path) => { posts++; received = path; return response.promise; } });
+  t.after(h.controller.stop); h.controller.start(); await settle();
+  const first = h.controller.local("auditor-x");
+  await h.controller.local("other"); await h.controller.enqueue();
+  assert.equal(posts, 1); assert.equal(h.calls.start, 0); assert.equal(received, "auditor-x");
+  created = true; response.resolve(local); await first;
+  assert.equal(h.controller.getSnapshot().selected?.source_kind, "local");
+  assert.equal(h.pending(), true);
 });
 
 test("cancel guards duplicate clicks and stops terminal polling", async (t) => {

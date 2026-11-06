@@ -45,6 +45,15 @@ func rollback(tx pgx.Tx) {
 }
 
 func (p *Postgres) Create(ctx context.Context, actor string, input entity.NewRepository) (entity.Repository, error) {
+	return p.create(ctx, actor, input, 0, 0)
+}
+
+// ImportGitHub persists the immutable upstream identity atomically with ownership.
+func (p *Postgres) ImportGitHub(ctx context.Context, actor string, input entity.NewRepository, githubID, installationID int64) (entity.Repository, error) {
+	return p.create(ctx, actor, input, githubID, installationID)
+}
+
+func (p *Postgres) create(ctx context.Context, actor string, input entity.NewRepository, githubID, installationID int64) (entity.Repository, error) {
 	tx, err := p.begin(ctx, actor)
 	if err != nil {
 		return entity.Repository{}, err
@@ -61,6 +70,14 @@ func (p *Postgres) Create(ctx context.Context, actor string, input entity.NewRep
 	_, err = tx.Exec(ctx, `INSERT INTO public.repository_members (repository_id, repository_owner_id, user_id, access_level) VALUES ($1::uuid, $2::uuid, $2::uuid, 'owner')`, result.ID, actor)
 	if err != nil {
 		return entity.Repository{}, mapError(err)
+	}
+	if githubID > 0 {
+		if _, err = tx.Exec(ctx, "SET LOCAL ROLE auditorx_api"); err != nil {
+			return entity.Repository{}, err
+		}
+		if _, err = tx.Exec(ctx, `INSERT INTO auth.github_repositories(repository_id,github_id,installation_id) VALUES($1::uuid,$2,$3)`, result.ID, githubID, installationID); err != nil {
+			return entity.Repository{}, err
+		}
 	}
 	if err = tx.Commit(ctx); err != nil {
 		return entity.Repository{}, err

@@ -30,6 +30,42 @@ type jobsStub struct {
 	status string
 }
 
+func (s *jobsStub) EnqueueLocal(context.Context, string, string, string, string) (Job, error) {
+	s.calls++
+	return Job{ID: bob, Status: "queued", SourceKind: "local"}, s.err
+}
+
+func TestEnqueueLocalHTTP(t *testing.T) {
+	t.Setenv("LOCAL_SCAN_ENABLED", "true")
+	t.Setenv("LOCAL_SCAN_HOST_ROOT", `C:\Projects`)
+	for _, tc := range []struct {
+		access, body string
+		want         int
+	}{
+		{"owner", `{"path":"auditor-x"}`, 202},
+		{"owner", `{"path":"\"C:\\Projects\\crm-new-idea-front\""}`, 202},
+		{"editor", `{"path":"auditor-x/frontend"}`, 202},
+		{"viewer", `{"path":"auditor-x"}`, 403},
+		{"owner", `{"path":"../other"}`, 400},
+		{"owner", `{"path":"/etc"}`, 400},
+		{"owner", `{"path":"auditor-x"} {}`, 400},
+	} {
+		jobs := &jobsStub{}
+		mux := http.NewServeMux()
+		Handler{Repositories: readerStub{access: tc.access}, Jobs: jobs}.RegisterRoutes(mux)
+		r := httptest.NewRequest("POST", "/api/v1/repositories/"+alice+"/scans/local", strings.NewReader(tc.body))
+		r = r.WithContext(identity.WithUserID(r.Context(), alice))
+		w := httptest.NewRecorder()
+		mux.ServeHTTP(w, r)
+		if w.Code != tc.want {
+			t.Fatalf("%s %s: %d %s", tc.access, tc.body, w.Code, w.Body.String())
+		}
+		if tc.want != 202 && jobs.calls != 0 {
+			t.Fatal("unauthorized/invalid request queued")
+		}
+	}
+}
+
 func (s *jobsStub) Enqueue(context.Context, string, string, string) (Job, error) {
 	s.calls++
 	return Job{ID: bob, Status: "queued"}, s.err

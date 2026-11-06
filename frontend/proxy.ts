@@ -29,6 +29,12 @@ export async function proxy(request: NextRequest) {
   }
 
   if (authenticated && request.nextUrl.pathname === "/login") {
+    const githubError = request.nextUrl.searchParams.get("error");
+    if (githubError?.startsWith("github_")) {
+      const url = new URL("/repositories", request.url);
+      url.searchParams.set("github_error", githubError);
+      return copySessionCookie(NextResponse.redirect(url), authResponse!);
+    }
     const next = request.nextUrl.searchParams.get("next");
     const destination = next?.startsWith("/") && !next.startsWith("//") ? next : "/";
     return copySessionCookie(NextResponse.redirect(new URL(destination, request.url)), authResponse!);

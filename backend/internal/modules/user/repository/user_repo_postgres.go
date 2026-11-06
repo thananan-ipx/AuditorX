@@ -156,7 +156,7 @@ func sessionUser(ctx context.Context, tx pgx.Tx, token string) (entity.User, err
 	if err != nil {
 		return entity.User{}, err
 	}
-	query := `SELECT u.id::text,u.email FROM auth.sessions s JOIN auth.users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now() AND u.password_hash IS NOT NULL`
+	query := `SELECT u.id::text,u.email FROM auth.sessions s JOIN auth.users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now() AND u.email IS NOT NULL`
 	var user entity.User
 	err = tx.QueryRow(ctx, query, hash).Scan(&user.ID, &user.Email)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -199,7 +199,7 @@ func (r *PostgresUserRepository) Refresh(ctx context.Context, token string) (ent
 	var user entity.User
 	err = tx.QueryRow(ctx, `WITH removed AS (
         DELETE FROM auth.sessions WHERE token_hash=$1 AND expires_at>now() RETURNING user_id
-    ) SELECT u.id::text,u.email FROM removed s JOIN auth.users u ON u.id=s.user_id WHERE u.password_hash IS NOT NULL`, hash).Scan(&user.ID, &user.Email)
+    ) SELECT u.id::text,u.email FROM removed s JOIN auth.users u ON u.id=s.user_id WHERE u.email IS NOT NULL`, hash).Scan(&user.ID, &user.Email)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return entity.Session{}, invalidCredentials()
 	}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, ChevronsUpDown, CircleDot, Code2, FileBarChart, History, LogOut, Settings, Users, X } from "lucide-react";
+import { ChevronsUpDown, Code2, LogOut, X } from "lucide-react";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -13,11 +13,6 @@ import { authService, type AuthUser } from "@/features/auth/service/auth-service
 import { useLanguage } from "@/lib/i18n";
 import { APP_NAME } from "@/lib/constants";
 import { currentPage, navigationPages } from "./navigation";
-
-const plannedGroups = [
-  { label: "Analysis", items: [{ label: "Issues", icon: CircleDot }, { label: "Scan history", icon: History }, { label: "Reports", icon: FileBarChart }] },
-  { label: "Management", items: [{ label: "Team", icon: Users }, { label: "Model evaluation", icon: BarChart3 }, { label: "Settings", icon: Settings }] },
-];
 
 export function AppSidebar() {
   const { t } = useLanguage();
@@ -39,9 +34,7 @@ export function AppSidebar() {
       <SidebarGroup className="p-0 pb-2"><SidebarGroupLabel className="type-overline">{t("Workspace")}</SidebarGroupLabel><SidebarGroupContent><SidebarMenu>
         {navigationPages.map(page => <SidebarMenuItem key={page.href}><SidebarMenuButton asChild isActive={active === page.href} tooltip={t(page.label)} className="h-10 type-label"><Link href={page.href} aria-current={active === page.href ? "page" : undefined} onClick={() => setOpenMobile(false)}><page.icon aria-hidden="true" /><span>{t(page.label)}</span></Link></SidebarMenuButton></SidebarMenuItem>)}
       </SidebarMenu></SidebarGroupContent></SidebarGroup>
-      {plannedGroups.map(group => <SidebarGroup key={group.label} className="p-0 pb-2"><SidebarGroupLabel className="type-overline">{t(group.label)}</SidebarGroupLabel><SidebarGroupContent><SidebarMenu>
-        {group.items.map(item => <SidebarMenuItem key={item.label}><SidebarMenuButton disabled tooltip={t("Not available yet")} className="h-10 type-label" aria-label={`${t(item.label)} · ${t("Not available yet")}`}><item.icon aria-hidden="true" /><span>{t(item.label)}</span><span className="ml-auto type-caption group-data-[collapsible=icon]:hidden">{t("Soon")}</span></SidebarMenuButton></SidebarMenuItem>)}
-      </SidebarMenu></SidebarGroupContent></SidebarGroup>)}
+      <div className="mx-2 mt-auto rounded-xl border border-sidebar-border bg-sidebar-accent/40 p-3 group-data-[collapsible=icon]:hidden"><p className="type-label font-semibold">{t("From scan to training")}</p><p className="mt-1 type-caption text-muted-foreground">{t("Scan code, review findings and export labeled examples.")}</p></div>
     </SidebarContent>
     <SidebarFooter className="p-2"><UserMenu user={user} /></SidebarFooter>
   </Sidebar>;

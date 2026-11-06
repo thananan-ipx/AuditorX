@@ -22,6 +22,9 @@ export const scanService = {
   upload(repositoryID: string, source: FormData, signal?: AbortSignal) {
     return apiClient<Scan>(`${base(repositoryID)}/upload`, { method: "POST", body: source, signal });
   },
+  local(repositoryID: string, path: string, signal?: AbortSignal) {
+    return apiClient<Scan>(`${base(repositoryID)}/local`, { method: "POST", body: JSON.stringify({ path }), signal });
+  },
   cancel(repositoryID: string, scanID: string, signal?: AbortSignal) {
     return apiClient<Scan>(`${detail(repositoryID, scanID)}/cancel`, { method: "POST", signal });
   },

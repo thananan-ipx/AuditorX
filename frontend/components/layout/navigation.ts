@@ -1,4 +1,4 @@
-import { Box, LayoutDashboard, type LucideIcon } from "lucide-react";
+import { Box, Database, LayoutDashboard, type LucideIcon } from "lucide-react";
 
 export type NavigationPage = {
   href: string; label: string; group: string; icon: LucideIcon; keywords: string[];
@@ -8,6 +8,7 @@ export type NavigationPage = {
 export const navigationPages: NavigationPage[] = [
   { href: "/dashboard", label: "Overview", group: "Workspace", icon: LayoutDashboard, keywords: ["dashboard", "overview", "ภาพรวม", "แดชบอร์ด", "scan", "สแกน"] },
   { href: "/repositories", label: "Repositories", group: "Workspace", icon: Box, keywords: ["repositories", "repository", "github", "คลังโค้ด", "เพิ่มคลังโค้ด"] },
+  { href: "/datasets", label: "Training datasets", group: "Workspace", icon: Database, keywords: ["dataset", "training", "labels", "ชุดข้อมูล", "เทรน", "train"] },
 ];
 
 export function currentPage(pathname: string) {

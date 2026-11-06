@@ -53,6 +53,7 @@ func TestPostgresIntegration(t *testing.T) {
 	if err := admin.QueryRow(ctx, "SELECT id FROM public.auditorx_test_marker").Scan(&marker); err != nil || marker != "ephemeral-test-only" {
 		t.Fatal("test database marker missing")
 	}
+	admin.Close()
 	app := connect(true)
 	repo, err := repository.NewPostgresUserRepository(app)
 	if err != nil {
@@ -74,7 +75,7 @@ func TestPostgresIntegration(t *testing.T) {
 		t.Fatal(err)
 	}
 	var storedHash string
-	if err := admin.QueryRow(ctx, "SELECT password_hash FROM auth.users WHERE id=$1::uuid", account.User.ID).Scan(&storedHash); err != nil || !strings.HasPrefix(storedHash, "$argon2id$") || strings.Contains(storedHash, password) {
+	if err := app.QueryRow(ctx, "SELECT password_hash FROM auth.users WHERE id=$1::uuid", account.User.ID).Scan(&storedHash); err != nil || !strings.HasPrefix(storedHash, "$argon2id$") || strings.Contains(storedHash, password) {
 		t.Fatal("password not stored as Argon2id")
 	}
 	for _, email := range []string{"owner@example.test", "missing@example.test"} {
@@ -96,14 +97,19 @@ func TestPostgresIntegration(t *testing.T) {
 		t.Fatal("forged cookie accepted")
 	}
 	// Tokens resolve through PostgreSQL even after a new repository/pool is created.
-	reconnected, err := repository.NewPostgresUserRepository(connect(true))
+	// Close the old transport first: PGlite multiplexes one PostgreSQL session
+	// and cannot safely model overlapping startup/auth messages from many pools.
+	app.Close()
+	app = connect(true)
+	reconnected, err := repository.NewPostgresUserRepository(app)
 	if err != nil {
 		t.Fatal(err)
 	}
 	user, err := reconnected.User(ctx, session.AccessToken)
 	if err != nil || user.ID != account.User.ID {
-		t.Fatal("session did not survive reconnect")
+		t.Fatalf("session did not survive reconnect: %v (user %q)", err, user.ID)
 	}
+	repo = reconnected
 	projects := projectrepo.NewPostgres(app)
 	project, err := projects.Create(ctx, user.ID, projectentity.NewRepository{Name: "local-auth", Owner: "org", URL: "https://github.com/org/local-auth", Branch: "main"})
 	if err != nil {
@@ -127,10 +133,10 @@ func TestPostgresIntegration(t *testing.T) {
 	}
 	// The PGlite socket harness multiplexes one backend session. Explicitly
 	// restore the administrator just for the expiry fixture, then drop it again.
-	if _, err := admin.Exec(ctx, "RESET ROLE"); err != nil {
+	if _, err := app.Exec(ctx, "RESET ROLE"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := admin.Exec(ctx, `UPDATE auth.sessions SET created_at=now()-interval '2 days',expires_at=now()-interval '1 day' WHERE user_id=$1::uuid`, other.User.ID); err != nil {
+	if _, err := app.Exec(ctx, `UPDATE auth.sessions SET created_at=now()-interval '2 days',expires_at=now()-interval '1 day' WHERE user_id=$1::uuid`, other.User.ID); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := app.Exec(ctx, "SET ROLE auditorx_api"); err != nil {

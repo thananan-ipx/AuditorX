@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/IProgressX/auditor-x/backend/internal/shared/github"
 	"github.com/joho/godotenv"
 )
 
@@ -18,6 +19,7 @@ type Config struct {
 	FrontendURL       string
 	CookieSecure      bool
 	CookieDomain      string
+	GitHub            github.Config
 }
 
 func Load() (Config, error) {
@@ -54,6 +56,13 @@ func Load() (Config, error) {
 	}
 	if cfg.ScanQueueEnabled && cfg.RepositoryStorage != "postgres" {
 		return Config{}, errors.New("SCAN_QUEUE_ENABLED requires postgres repository storage")
+	}
+	cfg.GitHub, err = github.LoadConfig()
+	if err != nil {
+		return Config{}, err
+	}
+	if cfg.GitHub.Enabled() && cfg.RepositoryStorage != "postgres" {
+		return Config{}, errors.New("GitHub integration requires postgres repository storage")
 	}
 
 	return cfg, nil

@@ -23,6 +23,7 @@ type Handler struct {
 	frontendURL  string
 	cookieSecure bool
 	cookieDomain string
+	ExtraRoutes  func(*http.ServeMux)
 }
 
 func NewHandler(service *service.UserService, frontendURL string, cookieSecure bool, cookieDomain string) *Handler {
@@ -162,6 +163,11 @@ func (h *Handler) setSessionCookie(w http.ResponseWriter, session entity.Session
 		maxAge = 30 * 24 * 60 * 60
 	}
 	http.SetCookie(w, &http.Cookie{Name: sessionCookieName, Value: session.AccessToken, Path: "/", Domain: h.cookieDomain, MaxAge: maxAge, Expires: time.Now().Add(time.Duration(maxAge) * time.Second), HttpOnly: true, Secure: h.cookieSecure, SameSite: http.SameSiteLaxMode})
+}
+
+// SetSessionCookie lets external identity providers create the same opaque local session.
+func (h *Handler) SetSessionCookie(w http.ResponseWriter, session entity.Session) {
+	h.setSessionCookie(w, session)
 }
 
 func (h *Handler) clearSessionCookie(w http.ResponseWriter) {

@@ -23,6 +23,8 @@ __pycache__/
 # production
 /build
 /.local/
+/tmp/
+/output/
 /supabase/.temp/
 /supabase/.branches/
 
@@ -49,7 +51,12 @@ next-env.d.ts
 # Go build cache
 /backend/.gocache/
 
+# Local research dataset snapshots
+/artifacts/datasets/
+
 # MD
 *.md
 !/README.md
 !/docs/**/*.md
+!/examples/nextjs-scan-lab/README.md
+!/examples/nextjs-scan-lab/.env.example
